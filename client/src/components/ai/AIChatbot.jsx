@@ -15,6 +15,10 @@ const AIChatbot = () => {
     const [loading, setLoading] = useState(false);
     const messagesEndRef = useRef(null);
 
+    // Generate a unique user ID (in production, use actual user ID from auth)
+    const userId = `farmer_${Math.random().toString(36).substr(2, 9)}`;
+    const BACKEND_URL = 'http://localhost:5000';
+
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
@@ -39,37 +43,50 @@ const AIChatbot = () => {
         setInputValue('');
         setLoading(true);
 
-        // Simulate AI response (replace with actual API call)
-        setTimeout(() => {
+        try {
+            // Call backend API
+            const response = await fetch(`${BACKEND_URL}/api/chatbot/chat`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    userId: userId,
+                    message: inputValue,
+                    farmingContext: {
+                        cropType: 'General',
+                        region: 'India',
+                        season: 'Current'
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to get response from AI');
+            }
+
+            const data = await response.json();
+            
             const botMessage = {
                 id: messages.length + 2,
                 type: 'bot',
-                content: getBotResponse(inputValue),
+                content: data.reply || 'Sorry, I couldn\'t process your request.',
                 timestamp: new Date()
             };
+            
             setMessages(prev => [...prev, botMessage]);
+        } catch (error) {
+            console.error('Chat Error:', error);
+            const errorMessage = {
+                id: messages.length + 2,
+                type: 'bot',
+                content: '⚠️ I\'m having trouble connecting to the AI service. Please make sure the backend server is running on port 5000. Error: ' + error.message,
+                timestamp: new Date()
+            };
+            setMessages(prev => [...prev, errorMessage]);
+        } finally {
             setLoading(false);
-        }, 1000);
-    };
-
-    const getBotResponse = (userInput) => {
-        const responses = {
-            disease: 'I can help detect crop diseases! Upload an image to our Disease Detection page, and our AI will analyze it within seconds. We can detect over 30 common crop diseases with 90%+ accuracy.',
-            marketplace: 'The Marketplace is great for buying fresh produce directly from farmers or selling your harvest. You can set your own prices and connect with verified buyers. Would you like tips on pricing?',
-            leftover: 'The Leftover Management section helps you reduce food waste and earn extra income from surplus crops. You can list your extras and connect with bulk buyers!',
-            price: 'Product pricing depends on freshness, season, and location. Check current market rates in the Marketplace, or ask specific crop questions!',
-            help: 'I can assist you with:\n• Crop disease identification\n• Marketplace tips and pricing\n• Leftover crop management\n• General farming advice\n\nWhat would you like to know?'
-        };
-
-        const input = userInput.toLowerCase();
-
-        if (input.includes('disease')) return responses.disease;
-        if (input.includes('marketplace') || input.includes('buy') || input.includes('sell')) return responses.marketplace;
-        if (input.includes('leftover') || input.includes('surplus') || input.includes('waste')) return responses.leftover;
-        if (input.includes('price') || input.includes('cost') || input.includes('rate')) return responses.price;
-        if (input.includes('help') || input.includes('what') || input.includes('can')) return responses.help;
-
-        return 'Great question! Could you provide more details? I can help with disease detection, marketplace tips, leftover management, or farming advice.';
+        }
     };
 
     return (

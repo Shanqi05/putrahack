@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Microscope, ShoppingCart, Recycle, Zap, Cloud, MapPin, MessageCircle } from 'lucide-react';
-import { getWeatherForecast } from '../services/weather';
+import { Microscope, ShoppingCart, Recycle, Zap, Cloud, MapPin, MessageCircle, AlertCircle, Droplets, Wind } from 'lucide-react';
+import { getWeatherAlert } from '../services/weather';
 
 // Chatbot Logo Component (Fixed on all pages)
 const ChatbotLogo = () => {
@@ -111,8 +111,20 @@ const Home = () => {
     const [activeIndex, setActiveIndex] = useState(0);
     const activeIndexRef = useRef(0);
     const [weatherData, setWeatherData] = useState(null);
-    const [selectedLocation, setSelectedLocation] = useState('Kuala Lumpur');
+    const [weatherError, setWeatherError] = useState(null);
+    const [selectedLocation, setSelectedLocation] = useState('delhi');
     const [loading, setLoading] = useState(false);
+
+    // Indian Farming Regions with coordinates
+    const locations = {
+        delhi: { name: 'Delhi', lat: 28.6139, lon: 77.2090 },
+        punjab: { name: 'Punjab', lat: 31.5204, lon: 74.3587 },
+        haryana: { name: 'Haryana', lat: 29.0588, lon: 77.6249 },
+        uttar_pradesh: { name: 'Uttar Pradesh', lat: 26.8467, lon: 80.9462 },
+        maharashtra: { name: 'Maharashtra', lat: 19.7515, lon: 75.7139 },
+        rajasthan: { name: 'Rajasthan', lat: 27.0238, lon: 74.2179 },
+        karnataka: { name: 'Karnataka', lat: 15.3173, lon: 75.7139 }
+    };
 
     // Agriculture Images
     const images = [
@@ -236,17 +248,25 @@ const Home = () => {
     useEffect(() => {
         const fetchWeather = async () => {
             setLoading(true);
+            setWeatherError(null);
             try {
-                const data = await getWeatherForecast(5);
+                const location = locations[selectedLocation];
+                if (!location) {
+                    setWeatherError('Location not found');
+                    return;
+                }
+                
+                const data = await getWeatherAlert(location.lat, location.lon, 'General');
                 setWeatherData(data);
             } catch (error) {
                 console.error('Failed to load weather:', error);
+                setWeatherError('Unable to fetch weather data. Make sure backend is running on http://localhost:5000');
             }
             setLoading(false);
         };
 
         fetchWeather();
-    }, []);
+    }, [selectedLocation]);
 
     // Sync activeIndex to ref
     useEffect(() => {
@@ -398,35 +418,90 @@ const Home = () => {
                             value={selectedLocation}
                             onChange={(e) => setSelectedLocation(e.target.value)}
                             className="w-full bg-white rounded-lg px-4 py-3 text-emerald-900 font-semibold focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-300/60 transition-all border-2 border-emerald-300/70 hover:border-emerald-400 shadow-md">
-                            <option value="Kuala Lumpur">Kuala Lumpur</option>
-                            <option value="Selangor">Selangor</option>
-                            <option value="Penang">Penang</option>
-                            <option value="Johor">Johor</option>
-                            <option value="Kelantan">Kelantan</option>
-                            <option value="Terengganu">Terengganu</option>
-                            <option value="Perak">Perak</option>
-                            <option value="Pahang">Pahang</option>
-                            <option value="Negeri Sembilan">Negeri Sembilan</option>
-                            <option value="Melaka">Melaka</option>
-                            <option value="Perlis">Perlis</option>
-                            <option value="Kedah">Kedah</option>
+                            <option value="delhi">Delhi</option>
+                            <option value="punjab">Punjab</option>
+                            <option value="haryana">Haryana</option>
+                            <option value="uttar_pradesh">Uttar Pradesh</option>
+                            <option value="maharashtra">Maharashtra</option>
+                            <option value="rajasthan">Rajasthan</option>
+                            <option value="karnataka">Karnataka</option>
                         </select>
                     </div>
 
                     {/* Weather Display */}
                     {loading ? (
                         <div className="text-center text-emerald-600/60 py-12 animate-pulse font-semibold">Loading weather data...</div>
+                    ) : weatherError ? (
+                        <div className="text-center text-red-600 py-12 bg-red-50 border-2 border-red-200 rounded-lg flex items-center justify-center gap-2">
+                            <AlertCircle size={20} />
+                            {weatherError}
+                        </div>
                     ) : weatherData ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-slideUp" style={{ animationDelay: '0.3s' }}>
-                            {weatherData.data && weatherData.data.slice(0, 4).map((item, idx) => (
-                                <div key={idx} className="bg-gradient-to-br from-emerald-200/60 to-green-100/50 backdrop-blur-lg rounded-xl border-2 border-emerald-300/70 p-6 hover:border-emerald-400 hover:shadow-lg hover:shadow-emerald-400/50 hover:from-emerald-300/70 transition-all duration-300 group cursor-pointer transform hover:scale-105 hover:-translate-y-1">
-                                    <h3 className="text-emerald-800 font-bold mb-3 flex items-center gap-2">
-                                        <MapPin size={18} className="text-emerald-600" />
-                                        {item.location || 'Location'}
-                                    </h3>
-                                    <p className="text-green-900/80 text-sm group-hover:text-green-900 transition-colors">Weather forecast data available</p>
+                        <div className="space-y-6 animate-slideUp" style={{ animationDelay: '0.3s' }}>
+                            {/* Current Weather */}
+                            <div className="bg-gradient-to-br from-emerald-200/60 to-green-100/50 backdrop-blur-lg rounded-2xl border-2 border-emerald-300/70 p-8 hover:border-emerald-400 hover:shadow-lg hover:shadow-emerald-400/50 transition-all duration-300">
+                                <h3 className="text-2xl text-emerald-900 font-black mb-6">Current Weather</h3>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div className="bg-white/60 rounded-xl p-4 backdrop-blur">
+                                        <p className="text-emerald-600 text-sm font-bold mb-1">Temperature</p>
+                                        <p className="text-3xl font-black text-emerald-700">{weatherData.currentWeather.temperature}</p>
+                                    </div>
+                                    <div className="bg-white/60 rounded-xl p-4 backdrop-blur">
+                                        <p className="text-emerald-600 text-sm font-bold mb-1 flex items-center gap-1">
+                                            <Droplets size={14} /> Humidity
+                                        </p>
+                                        <p className="text-3xl font-black text-blue-600">{weatherData.currentWeather.humidity}</p>
+                                    </div>
+                                    <div className="bg-white/60 rounded-xl p-4 backdrop-blur">
+                                        <p className="text-emerald-600 text-sm font-bold mb-1 flex items-center gap-1">
+                                            <Wind size={14} /> Wind
+                                        </p>
+                                        <p className="text-xl font-black text-green-600">{weatherData.currentWeather.windSpeed}</p>
+                                    </div>
+                                    <div className="bg-white/60 rounded-xl p-4 backdrop-blur">
+                                        <p className="text-emerald-600 text-sm font-bold mb-1">Rainfall</p>
+                                        <p className="text-3xl font-black text-cyan-600">{weatherData.currentWeather.precipitation}</p>
+                                    </div>
                                 </div>
-                            ))}
+                            </div>
+
+                            {/* Weather Alerts */}
+                            {weatherData.alerts && weatherData.alerts.length > 0 && (
+                                <div className="bg-gradient-to-br from-yellow-100/80 to-orange-50/70 backdrop-blur-lg rounded-2xl border-2 border-yellow-300/70 p-8">
+                                    <h3 className="text-2xl text-yellow-900 font-black mb-4 flex items-center gap-2">
+                                        <AlertCircle size={28} className="text-yellow-600" />
+                                        Active Alerts
+                                    </h3>
+                                    <div className="space-y-3">
+                                        {weatherData.alerts.map((alert, idx) => (
+                                            <div key={idx} className="bg-white/60 rounded-xl p-4 backdrop-blur border-l-4 border-yellow-600">
+                                                <div className="flex items-start gap-3">
+                                                    <span className="text-2xl">{alert.icon}</span>
+                                                    <div>
+                                                        <p className="font-bold text-yellow-900 capitalize">{alert.level}</p>
+                                                        <p className="text-yellow-900/90 text-sm">{alert.message}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 7-Day Forecast */}
+                            <div className="bg-gradient-to-br from-cyan-100/60 to-blue-100/50 backdrop-blur-lg rounded-2xl border-2 border-cyan-300/70 p-8">
+                                <h3 className="text-2xl text-cyan-900 font-black mb-4">7-Day Forecast</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
+                                    {weatherData.sevenDayForecast.dates.map((date, idx) => (
+                                        <div key={idx} className="bg-white/60 rounded-lg p-3 text-center backdrop-blur hover:bg-white/80 transition-all">
+                                            <p className="text-cyan-700 font-bold text-xs mb-2">{new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</p>
+                                            <p className="text-2xl font-black text-orange-600">{Math.round(weatherData.sevenDayForecast.maxTemps[idx])}°</p>
+                                            <p className="text-xs text-cyan-600">{Math.round(weatherData.sevenDayForecast.minTemps[idx])}°</p>
+                                            <p className="text-xs text-blue-600 font-bold mt-1">💧 {weatherData.sevenDayForecast.precipitation[idx]}mm</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     ) : (
                         <div className="text-center text-green-900/60 py-12">Unable to load weather data</div>

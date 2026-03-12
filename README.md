@@ -73,44 +73,99 @@ putrahack/
 
 ### Prerequisites
 - Node.js (v16+)
-- npm or yarn
+- npm v10+
+- Git
+- A Firebase account (for authentication & database)
 
-### Frontend Setup
+### ⚡ Quick Start (Frontend Only)
 
 ```bash
-# Navigate to client directory
+# 1. Navigate to client directory
+cd client
+
+# 2. Install dependencies (optimized for speed)
+npm ci
+# Or if starting fresh:
+npm install
+
+# 3. Start development server
+npm run dev
+# Opens at http://localhost:5173
+```
+
+### 🔧 Full Setup (Frontend + Backend)
+
+#### Step 1: Frontend Setup
+
+```bash
+# Navigate to client
 cd client
 
 # Install dependencies
-npm install
+npm ci
 
-# Start development server (runs on http://localhost:3000)
+# Start dev server
 npm run dev
-
-# Build for production
-npm run build
 ```
 
-### Backend Setup
+The frontend runs on **http://localhost:5173**
+
+#### Step 2: Backend Setup
 
 ```bash
-# Navigate to server directory
+# Navigate to server
 cd server
 
 # Install dependencies
 npm install
 
-# Create .env file
+# Create environment file
 cp .env.example .env
 
-# Edit .env with your Firebase credentials
+# Edit .env with your credentials:
+# - Firebase config
+# - API keys
+# - Database URLs
 
-# Start development server (runs on http://localhost:5000)
+# Start development server
 npm run dev
-
-# Or start production
-npm start
 ```
+
+The backend runs on **http://localhost:5000**
+
+#### Step 3: Firebase Configuration
+
+1. **Read the detailed guide:** See [FIREBASE_SETUP.md](./FIREBASE_SETUP.md)
+2. **Update Firebase config** in `client/src/firebase.js` with your credentials
+3. **Update backend .env** with Firebase keys
+
+### 📦 Building for Production
+
+```bash
+# Frontend build
+cd client
+npm run build
+# Output: client/dist/
+
+# Backend: Set NODE_ENV=production
+cd server
+NODE_ENV=production npm start
+```
+
+### 🐛 Troubleshooting
+
+**npm install is slow?**
+- Use `npm ci` instead (uses package-lock.json)
+- Clear cache: `npm cache clean --force`
+
+**Vite dev server not starting?**
+- Check port 5173 is available
+- Delete `node_modules` and reinstall: `npm ci`
+
+**Firebase auth not working?**
+- Verify Firebase config in `client/src/firebase.js`
+- Check Firebase Console rules allow read/write
+- See [FIREBASE_SETUP.md](./FIREBASE_SETUP.md)
 
 ## 📋 Features Implemented
 
