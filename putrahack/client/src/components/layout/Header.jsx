@@ -1,0 +1,123 @@
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { Leaf, User, ChevronDown, LogOut } from 'lucide-react';
+import { auth } from '../../firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+
+const NavItem = ({ title, items }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="relative group" onMouseEnter={() => setIsOpen(true)} onMouseLeave={() => setIsOpen(false)}>
+      <button className="flex items-center space-x-1 text-slate-700 hover:text-emerald-600 transition-all font-semibold px-4 py-2 rounded-xl hover:bg-emerald-50">
+        <span>{title}</span>
+        <ChevronDown size={14} className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 mt-1 w-64 bg-white/90 backdrop-blur-xl border border-emerald-100 shadow-2xl rounded-2xl py-3 z-[100] animate-in fade-in slide-in-from-top-2">
+          {items.map((item, idx) => (
+            <Link key={idx} to={item.path} className="block px-4 py-3 hover:bg-emerald-500/10 transition-colors group/item">
+              <span className="block font-bold text-slate-800 group-hover/item:text-emerald-700 text-sm">{item.label}</span>
+              <p className="text-xs text-slate-400 font-medium">{item.desc}</p>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const Header = () => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  };
+
+  return (
+    <nav className="fixed top-4 left-1/2 -translate-x-1/2 w-[95%] max-w-7xl bg-white/70 backdrop-blur-md border border-white/40 shadow-lg rounded-[2rem] z-[1000] px-6 py-3 flex items-center justify-between">
+      {/* Brand Logo */}
+      <Link to="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
+        <div className="bg-nature-gradient p-2 rounded-xl text-brand-accent shadow-md">
+          <Leaf size={24} fill="currentColor" />
+        </div>
+        <span className="text-2xl font-black bg-nature-gradient bg-clip-text text-transparent tracking-tighter">
+          TripleGain
+        </span>
+      </Link>
+
+      {/* Navigation Links */}
+      <div className="hidden lg:flex items-center space-x-1">
+        <Link to="/" className="flex items-center space-x-1 text-slate-700 hover:text-emerald-600 transition-all font-semibold px-4 py-2 rounded-xl hover:bg-emerald-50">
+          Home
+        </Link>
+
+        <NavItem title="Disease Detection"
+          items={[
+            { label: 'Scan Crops', desc: 'AI-powered disease detection', path: '/disease-detection' },
+            { label: 'Results History', desc: 'View past diagnoses', path: '/disease-detection' }
+          ]} />
+
+        <NavItem title="Marketplace"
+          items={[
+            { label: 'Buy Fresh Crops', desc: 'Direct from farmers', path: '/marketplace' },
+            { label: 'Sell Your Harvest', desc: 'List your crops', path: '/marketplace' }
+          ]} />
+
+        <NavItem title="Leftover"
+          items={[
+            { label: 'Find Surplus', desc: 'Discounted products', path: '/leftover' },
+            { label: 'List Leftover', desc: 'Sell extra crops', path: '/leftover' }
+          ]} />
+      </div>
+
+      {/* User Actions */}
+      <div className="flex items-center space-x-3">
+        {loading ? (
+          <div className="h-10 w-10 rounded-full bg-emerald-100 animate-pulse"></div>
+        ) : user ? (
+          <div className="flex items-center gap-3">
+            <Link to="/profile" className="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-400 to-green-500 p-[2px] hover:shadow-lg transition-all">
+              <div className="h-full w-full rounded-full bg-white flex items-center justify-center text-emerald-600">
+                <User size={20} />
+              </div>
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="text-slate-700 hover:text-red-600 transition-colors"
+              title="Logout"
+            >
+              <LogOut size={20} />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Link to="/login" className="text-slate-700 hover:text-emerald-600 font-semibold px-4 py-2 transition-colors">
+              Login
+            </Link>
+            <Link to="/signup" className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-4 py-2 rounded-lg transition-all">
+              Sign Up
+            </Link>
+          </div>
+        )}
+      </div>
+    </nav>
+  );
+};
+
+export default Header;
