@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, Phone, MapPin, Eye, EyeOff, Leaf, ArrowRight, CheckCircle } from 'lucide-react';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { auth, db } from '../firebase';
-import { setDoc, doc } from 'firebase/firestore';
+import { Mail, Lock, User, MapPin, Eye, EyeOff, Leaf, ArrowRight, CheckCircle } from 'lucide-react';
+import { signup } from '../services/auth';
 
 const Signup = () => {
     const [formData, setFormData] = useState({
@@ -11,9 +9,8 @@ const Signup = () => {
         email: '',
         password: '',
         confirmPassword: '',
-        phone: '',
-        location: '',
-        role: 'farmer' // or 'buyer'
+        region: '',
+        userType: 'farmer' // or 'buyer'
     });
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -36,29 +33,26 @@ const Signup = () => {
                 throw new Error('Passwords do not match');
             }
 
-            // Create user in Firebase Auth
-            const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-            const user = userCredential.user;
+            if (formData.password.length < 6) {
+                throw new Error('Password must be at least 6 characters');
+            }
 
-            // Update user profile
-            await updateProfile(user, {
-                displayName: formData.fullName
-            });
+            // Call backend signup
+            const result = await signup(
+                formData.email,
+                formData.password,
+                formData.fullName,
+                formData.userType,
+                '', // cropType - can be added later
+                formData.region
+            );
 
-            // Save user info to Firestore
-            await setDoc(doc(db, 'users', user.uid), {
-                fullName: formData.fullName,
-                email: formData.email,
-                phone: formData.phone,
-                location: formData.location,
-                role: formData.role,
-                createdAt: new Date(),
-                avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${formData.fullName}`
-            });
-
+            // Store user info in localStorage
+            localStorage.setItem('user', JSON.stringify(result.user));
+            
             navigate('/');
         } catch (err) {
-            setError(err.message);
+            setError(err.message || 'Signup failed. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -107,37 +101,37 @@ const Signup = () => {
                         <div>
                             <label className="block text-emerald-900 font-bold mb-3">I am a:</label>
                             <div className="grid grid-cols-2 gap-4">
-                                <label className={`relative cursor-pointer p-4 rounded-2xl border-2 transition-all ${formData.role === 'farmer'
+                                <label className={`relative cursor-pointer p-4 rounded-2xl border-2 transition-all ${formData.userType === 'farmer'
                                         ? 'border-emerald-500 bg-emerald-50'
                                         : 'border-emerald-200 hover:border-emerald-300 bg-white'
                                     }`}>
                                     <input
                                         type="radio"
-                                        name="role"
+                                        name="userType"
                                         value="farmer"
-                                        checked={formData.role === 'farmer'}
+                                        checked={formData.userType === 'farmer'}
                                         onChange={handleChange}
                                         className="hidden"
                                     />
                                     <div className="flex items-center gap-2">
-                                        <CheckCircle size={20} className={formData.role === 'farmer' ? 'text-emerald-600' : 'text-gray-300'} />
+                                        <CheckCircle size={20} className={formData.userType === 'farmer' ? 'text-emerald-600' : 'text-gray-300'} />
                                         <span className="font-bold text-emerald-900">Farmer</span>
                                     </div>
                                 </label>
-                                <label className={`relative cursor-pointer p-4 rounded-2xl border-2 transition-all ${formData.role === 'buyer'
+                                <label className={`relative cursor-pointer p-4 rounded-2xl border-2 transition-all ${formData.userType === 'buyer'
                                         ? 'border-emerald-500 bg-emerald-50'
                                         : 'border-emerald-200 hover:border-emerald-300 bg-white'
                                     }`}>
                                     <input
                                         type="radio"
-                                        name="role"
+                                        name="userType"
                                         value="buyer"
-                                        checked={formData.role === 'buyer'}
+                                        checked={formData.userType === 'buyer'}
                                         onChange={handleChange}
                                         className="hidden"
                                     />
                                     <div className="flex items-center gap-2">
-                                        <CheckCircle size={20} className={formData.role === 'buyer' ? 'text-emerald-600' : 'text-gray-300'} />
+                                        <CheckCircle size={20} className={formData.userType === 'buyer' ? 'text-emerald-600' : 'text-gray-300'} />
                                         <span className="font-bold text-emerald-900">Buyer</span>
                                     </div>
                                 </label>
@@ -161,38 +155,29 @@ const Signup = () => {
                             />
                         </div>
 
-                        {/* Phone & Location */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div>
-                                <label className="block text-emerald-900 font-bold mb-2 flex items-center gap-2">
-                                    <Phone size={18} className="text-emerald-600" />
-                                    Phone Number
-                                </label>
-                                <input
-                                    type="tel"
-                                    name="phone"
-                                    value={formData.phone}
-                                    onChange={handleChange}
-                                    placeholder="+60 123456789"
-                                    className="w-full px-4 py-3 rounded-2xl border-2 border-emerald-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-300/30 outline-none transition-all bg-emerald-50/50"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-emerald-900 font-bold mb-2 flex items-center gap-2">
-                                    <MapPin size={18} className="text-emerald-600" />
-                                    Location
-                                </label>
-                                <input
-                                    type="text"
-                                    name="location"
-                                    value={formData.location}
-                                    onChange={handleChange}
-                                    placeholder="City, State"
-                                    className="w-full px-4 py-3 rounded-2xl border-2 border-emerald-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-300/30 outline-none transition-all bg-emerald-50/50"
-                                    required
-                                />
-                            </div>
+                        {/* Region */}
+                        <div>
+                            <label className="block text-emerald-900 font-bold mb-2 flex items-center gap-2">
+                                <MapPin size={18} className="text-emerald-600" />
+                                Region
+                            </label>
+                            <select
+                                name="region"
+                                value={formData.region}
+                                onChange={handleChange}
+                                className="w-full px-4 py-3 rounded-2xl border-2 border-emerald-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-300/30 outline-none transition-all bg-emerald-50/50"
+                                required
+                            >
+                                <option value="">Select your region</option>
+                                <option value="Kuala Lumpur">Kuala Lumpur</option>
+                                <option value="Selangor">Selangor</option>
+                                <option value="Penang">Penang</option>
+                                <option value="Johor">Johor</option>
+                                <option value="Perak">Perak</option>
+                                <option value="Pahang">Pahang</option>
+                                <option value="Terengganu">Terengganu</option>
+                                <option value="Kelantan">Kelantan</option>
+                            </select>
                         </div>
 
                         {/* Password */}

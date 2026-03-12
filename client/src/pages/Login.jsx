@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, Leaf, ArrowRight } from 'lucide-react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../firebase';
+import { login } from '../services/auth';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -18,10 +17,12 @@ const Login = () => {
         setError('');
 
         try {
-            await signInWithEmailAndPassword(auth, email, password);
+            const result = await login(email, password);
+            // Store user info in localStorage
+            localStorage.setItem('user', JSON.stringify(result.user));
             navigate('/');
         } catch (err) {
-            setError(err.message);
+            setError(err.message || 'Login failed. Please check your credentials.');
         } finally {
             setLoading(false);
         }

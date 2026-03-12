@@ -112,18 +112,24 @@ const Home = () => {
     const activeIndexRef = useRef(0);
     const [weatherData, setWeatherData] = useState(null);
     const [weatherError, setWeatherError] = useState(null);
-    const [selectedLocation, setSelectedLocation] = useState('delhi');
+    const [selectedLocation, setSelectedLocation] = useState('kuala_lumpur');
     const [loading, setLoading] = useState(false);
 
-    // Indian Farming Regions with coordinates
+    // Malaysian Farming Regions with coordinates (13 Regions)
     const locations = {
-        delhi: { name: 'Delhi', lat: 28.6139, lon: 77.2090 },
-        punjab: { name: 'Punjab', lat: 31.5204, lon: 74.3587 },
-        haryana: { name: 'Haryana', lat: 29.0588, lon: 77.6249 },
-        uttar_pradesh: { name: 'Uttar Pradesh', lat: 26.8467, lon: 80.9462 },
-        maharashtra: { name: 'Maharashtra', lat: 19.7515, lon: 75.7139 },
-        rajasthan: { name: 'Rajasthan', lat: 27.0238, lon: 74.2179 },
-        karnataka: { name: 'Karnataka', lat: 15.3173, lon: 75.7139 }
+        kuala_lumpur: { name: 'Kuala Lumpur', lat: 3.1390, lon: 101.6869 },
+        selangor: { name: 'Selangor', lat: 2.7258, lon: 101.5244 },
+        penang: { name: 'Penang', lat: 5.4164, lon: 100.3327 },
+        johor: { name: 'Johor', lat: 1.4854, lon: 103.7618 },
+        perak: { name: 'Perak', lat: 4.5921, lon: 101.0901 },
+        pahang: { name: 'Pahang', lat: 3.8126, lon: 103.3256 },
+        terengganu: { name: 'Terengganu', lat: 5.3117, lon: 102.8381 },
+        kelantan: { name: 'Kelantan', lat: 6.1256, lon: 102.2381 },
+        kedah: { name: 'Kedah', lat: 6.1184, lon: 100.3688 },
+        sabah: { name: 'Sabah', lat: 5.3788, lon: 117.8753 },
+        sarawak: { name: 'Sarawak', lat: 1.5533, lon: 110.3593 },
+        putrajaya: { name: 'Putrajaya', lat: 2.7258, lon: 101.6964 },
+        negeri_sembilan: { name: 'Negeri Sembilan', lat: 2.7258, lon: 101.9424 }
     };
 
     // Agriculture Images
@@ -418,13 +424,19 @@ const Home = () => {
                             value={selectedLocation}
                             onChange={(e) => setSelectedLocation(e.target.value)}
                             className="w-full bg-white rounded-lg px-4 py-3 text-emerald-900 font-semibold focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-300/60 transition-all border-2 border-emerald-300/70 hover:border-emerald-400 shadow-md">
-                            <option value="delhi">Delhi</option>
-                            <option value="punjab">Punjab</option>
-                            <option value="haryana">Haryana</option>
-                            <option value="uttar_pradesh">Uttar Pradesh</option>
-                            <option value="maharashtra">Maharashtra</option>
-                            <option value="rajasthan">Rajasthan</option>
-                            <option value="karnataka">Karnataka</option>
+                            <option value="kuala_lumpur">Kuala Lumpur</option>
+                            <option value="selangor">Selangor</option>
+                            <option value="penang">Penang</option>
+                            <option value="johor">Johor</option>
+                            <option value="perak">Perak</option>
+                            <option value="pahang">Pahang</option>
+                            <option value="terengganu">Terengganu</option>
+                            <option value="kelantan">Kelantan</option>
+                            <option value="kedah">Kedah</option>
+                            <option value="sabah">Sabah</option>
+                            <option value="sarawak">Sarawak</option>
+                            <option value="putrajaya">Putrajaya</option>
+                            <option value="negeri_sembilan">Negeri Sembilan</option>
                         </select>
                     </div>
 

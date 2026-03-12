@@ -3,15 +3,21 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import axios from 'axios';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const JWT_SECRET = process.env.JWT_SECRET || 'triplegain-secret-key-2024';
 
 // Initialize Google Generative AI
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
 const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+
+// In-memory user storage (in production, use MongoDB/Firebase)
+const users = new Map();
 
 // Middleware
 app.use(cors());
@@ -33,6 +39,11 @@ app.get('/api', (req, res) => {
         version: '1.0.0',
         endpoints: {
             health: '/api/health',
+            auth: {
+                signup: 'POST /api/auth/signup',
+                login: 'POST /api/auth/login',
+                logout: 'POST /api/auth/logout'
+            },
             crops: '/api/crops',
             marketplace: '/api/marketplace',
             diseases: '/api/diseases',
@@ -45,6 +56,194 @@ app.get('/api', (req, res) => {
                 conversation: 'POST /api/chatbot/chat'
             }
         }
+    });
+});
+
+// ============================================
+// 🔐 AUTHENTICATION ENDPOINTS
+// ============================================
+
+// Signup Endpoint
+app.post('/api/auth/signup', async (req, res) => {
+    try {
+        const { email, password, fullName, cropType, region, userType } = req.body;
+
+        // Validation
+        if (!email || !password || !fullName) {
+            return res.status(400).json({
+                error: 'Missing required fields',
+                required: ['email', 'password', 'fullName', 'userType']
+            });
+        }
+
+        // Check if user already exists
+        if (users.has(email)) {
+            return res.status(409).json({
+                error: 'User already exists',
+                message: 'An account with this email already exists. Please login instead.'
+            });
+        }
+
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Store user
+        const newUser = {
+            id: `user_${Date.now()}`,
+            email,
+            password: hashedPassword,
+            fullName,
+            cropType: cropType || 'General',
+            region: region || 'Malaysia',
+            userType: userType || 'farmer', // 'farmer' or 'buyer'
+            createdAt: new Date().toISOString(),
+            profilePicture: null,
+            isVerified: false
+        };
+
+        users.set(email, newUser);
+
+        // Generate JWT token
+        const token = jwt.sign(
+            { id: newUser.id, email: newUser.email },
+            JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+
+        res.status(201).json({
+            status: 'success',
+            message: 'Account created successfully!',
+            user: {
+                id: newUser.id,
+                email: newUser.email,
+                fullName: newUser.fullName,
+                userType: newUser.userType,
+                cropType: newUser.cropType,
+                region: newUser.region
+            },
+            token,
+            expiresIn: '7 days'
+        });
+    } catch (error) {
+        console.error('Signup Error:', error);
+        res.status(500).json({
+            error: 'Failed to create account',
+            message: error.message
+        });
+    }
+});
+
+// Login Endpoint
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        // Validation
+        if (!email || !password) {
+            return res.status(400).json({
+                error: 'Missing email or password',
+                required: ['email', 'password']
+            });
+        }
+
+        // Find user
+        const user = users.get(email);
+        if (!user) {
+            return res.status(401).json({
+                error: 'Invalid credentials',
+                message: 'Email or password is incorrect'
+            });
+        }
+
+        // Compare password
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({
+                error: 'Invalid credentials',
+                message: 'Email or password is incorrect'
+            });
+        }
+
+        // Generate JWT token
+        const token = jwt.sign(
+            { id: user.id, email: user.email },
+            JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+
+        res.json({
+            status: 'success',
+            message: 'Login successful!',
+            user: {
+                id: user.id,
+                email: user.email,
+                fullName: user.fullName,
+                userType: user.userType,
+                cropType: user.cropType,
+                region: user.region,
+                createdAt: user.createdAt
+            },
+            token,
+            expiresIn: '7 days'
+        });
+    } catch (error) {
+        console.error('Login Error:', error);
+        res.status(500).json({
+            error: 'Failed to login',
+            message: error.message
+        });
+    }
+});
+
+// Get User Profile (requires token)
+app.get('/api/auth/profile', (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        
+        if (!token) {
+            return res.status(401).json({
+                error: 'No token provided',
+                message: 'Please provide a valid token in Authorization header'
+            });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const user = users.get(decoded.email);
+
+        if (!user) {
+            return res.status(404).json({
+                error: 'User not found'
+            });
+        }
+
+        res.json({
+            status: 'success',
+            user: {
+                id: user.id,
+                email: user.email,
+                fullName: user.fullName,
+                userType: user.userType,
+                cropType: user.cropType,
+                region: user.region,
+                createdAt: user.createdAt
+            }
+        });
+    } catch (error) {
+        console.error('Profile Error:', error);
+        res.status(401).json({
+            error: 'Invalid or expired token',
+            message: error.message
+        });
+    }
+});
+
+// Logout Endpoint (client-side)
+app.post('/api/auth/logout', (req, res) => {
+    // Token invalidation would be handled on client-side by removing the token
+    // In production, use a token blacklist or Redis
+    res.json({
+        status: 'success',
+        message: 'Logged out successfully. Please remove the token from localStorage.'
     });
 });
 
