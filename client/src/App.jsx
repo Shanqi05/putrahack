@@ -1,6 +1,8 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
 import Header from './components/layout/Header';
+import ProtectedRoute from './components/ProtectedRoute';
 import AIChatbot from './components/ai/AIChatbot';
 import Home from './pages/Home';
 import DiseaseDetection from './pages/DiseaseDetection';
@@ -13,19 +15,21 @@ import Profile from './pages/Profile';
 function App() {
   return (
     <Router>
-      <div className="font-sans">
-        <Header />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/disease-detection" element={<DiseaseDetection />} />
-          <Route path="/marketplace" element={<Marketplace />} />
-          <Route path="/leftover" element={<Leftover />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/profile" element={<Profile />} />
-        </Routes>
-        <AIChatbot />
-      </div>
+      <AuthProvider>
+        <div className="font-sans">
+          <Header />
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/disease-detection" element={<ProtectedRoute><DiseaseDetection /></ProtectedRoute>} />
+            <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
+            <Route path="/leftover" element={<ProtectedRoute><Leftover /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+          </Routes>
+          <AIChatbot />
+        </div>
+      </AuthProvider>
     </Router>
   );
 }

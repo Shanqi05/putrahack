@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, Leaf, ArrowRight } from 'lucide-react';
-import { login } from '../services/auth';
+import { login as apiLogin } from '../services/auth';
+import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -10,6 +11,7 @@ const Login = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const navigate = useNavigate();
+    const { login: setAuthUser } = useAuth();
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -17,9 +19,9 @@ const Login = () => {
         setError('');
 
         try {
-            const result = await login(email, password);
-            // Store user info in localStorage
-            localStorage.setItem('user', JSON.stringify(result.user));
+            const result = await apiLogin(email, password);
+            // Update global auth context with user info and token
+            setAuthUser(result.user, result.token);
             navigate('/');
         } catch (err) {
             setError(err.message || 'Login failed. Please check your credentials.');

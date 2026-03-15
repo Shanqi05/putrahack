@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Leaf, User, ChevronDown, LogOut } from 'lucide-react';
-import { auth } from '../../firebase';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { useAuth } from '../../context/AuthContext';
 
 // Refined NavItem: The main title is now a Link
 const NavItem = ({ title, items, path }) => {
@@ -50,23 +49,12 @@ const NavItem = ({ title, items, path }) => {
 };
 
 const Header = () => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { isLoggedIn, logout, loading } = useAuth();
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-    } catch (error) {
-      console.error('Error logging out:', error);
-    }
+  const handleLogout = () => {
+    logout();
+    navigate('/');
   };
 
   return (
@@ -82,48 +70,50 @@ const Header = () => {
         </span>
       </Link>
 
-      {/* Navigation Links */}
-      <div className="hidden lg:flex items-center space-x-1">
-        <Link 
-          to="/" 
-          className="text-slate-700 hover:text-emerald-600 transition-all font-semibold px-4 py-2 rounded-xl hover:bg-emerald-50"
-        >
-          Home
-        </Link>
+      {/* Navigation Links - Only show when logged in */}
+      {!loading && isLoggedIn() && (
+        <div className="hidden lg:flex items-center space-x-1">
+          <Link 
+            to="/" 
+            className="text-slate-700 hover:text-emerald-600 transition-all font-semibold px-4 py-2 rounded-xl hover:bg-emerald-50"
+          >
+            Home
+          </Link>
 
-        <NavItem 
-          title="Disease Detection"
-          path="/disease-detection"
-          items={[
-            { label: 'Scan Crops', desc: 'AI-powered disease detection', path: '/disease-detection' },
-            { label: 'Results History', desc: 'View past diagnoses', path: '/disease-detection' }
-          ]} 
-        />
+          <NavItem 
+            title="Disease Detection"
+            path="/disease-detection"
+            items={[
+              { label: 'Scan Crops', desc: 'AI-powered disease detection', path: '/disease-detection' },
+              { label: 'Results History', desc: 'View past diagnoses', path: '/disease-detection' }
+            ]} 
+          />
 
-        <NavItem 
-          title="Marketplace"
-          path="/marketplace"
-          items={[
-            { label: 'Buy Fresh Crops', desc: 'Direct from farmers', path: '/marketplace' },
-            { label: 'Sell Your Harvest', desc: 'List your crops', path: '/marketplace' }
-          ]} 
-        />
+          <NavItem 
+            title="Marketplace"
+            path="/marketplace"
+            items={[
+              { label: 'Buy Fresh Crops', desc: 'Direct from farmers', path: '/marketplace' },
+              { label: 'Sell Your Harvest', desc: 'List your crops', path: '/marketplace' }
+            ]} 
+          />
 
-        <NavItem 
-          title="Leftover"
-          path="/leftover"
-          items={[
-            { label: 'Find Surplus', desc: 'Discounted products', path: '/leftover' },
-            { label: 'List Leftover', desc: 'Sell extra crops', path: '/leftover' }
-          ]} 
-        />
-      </div>
+          <NavItem 
+            title="Leftover"
+            path="/leftover"
+            items={[
+              { label: 'Find Surplus', desc: 'Discounted products', path: '/leftover' },
+              { label: 'List Leftover', desc: 'Sell extra crops', path: '/leftover' }
+            ]} 
+          />
+        </div>
+      )}
 
       {/* User Actions */}
       <div className="flex items-center space-x-3">
         {loading ? (
           <div className="h-10 w-10 rounded-full bg-emerald-100 animate-pulse" />
-        ) : user ? (
+        ) : isLoggedIn() ? (
           <div className="flex items-center gap-3">
             <Link 
               to="/profile" 

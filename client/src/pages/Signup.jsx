@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, MapPin, Eye, EyeOff, Leaf, ArrowRight, CheckCircle } from 'lucide-react';
-import { signup } from '../services/auth';
+import { signup as apiSignup } from '../services/auth';
+import { useAuth } from '../context/AuthContext';
 
 const Signup = () => {
     const [formData, setFormData] = useState({
@@ -17,6 +18,7 @@ const Signup = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const navigate = useNavigate();
+    const { login: setAuthUser } = useAuth();
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -38,7 +40,7 @@ const Signup = () => {
             }
 
             // Call backend signup
-            const result = await signup(
+            const result = await apiSignup(
                 formData.email,
                 formData.password,
                 formData.fullName,
@@ -47,8 +49,8 @@ const Signup = () => {
                 formData.region
             );
 
-            // Store user info in localStorage
-            localStorage.setItem('user', JSON.stringify(result.user));
+            // Update global auth context with user info and token
+            setAuthUser(result.user, result.token);
             
             navigate('/');
         } catch (err) {

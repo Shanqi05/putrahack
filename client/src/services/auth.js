@@ -1,5 +1,12 @@
 // Authentication Service - TripleGain Backend
-const BACKEND_URL = 'http://localhost:5000';
+// Helper to build API URLs - uses Vite proxy in development, direct URL in production
+const getApiUrl = (endpoint) => {
+    if (import.meta.env.PROD) {
+        return `http://localhost:5000/api${endpoint}`;
+    } else {
+        return `/api${endpoint}`;
+    }
+};
 
 // Store token in localStorage
 const setToken = (token) => {
@@ -19,7 +26,7 @@ const removeToken = () => {
 // Signup API
 export const signup = async (email, password, fullName, userType = 'farmer', cropType = '', region = '') => {
     try {
-        const response = await fetch(`${BACKEND_URL}/api/auth/signup`, {
+        const response = await fetch(getApiUrl('/auth/signup'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -60,7 +67,7 @@ export const signup = async (email, password, fullName, userType = 'farmer', cro
 // Login API
 export const login = async (email, password) => {
     try {
-        const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
+        const response = await fetch(getApiUrl('/auth/login'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -103,7 +110,7 @@ export const getUserProfile = async () => {
             throw new Error('No token found. Please login.');
         }
 
-        const response = await fetch(`${BACKEND_URL}/api/auth/profile`, {
+        const response = await fetch(getApiUrl('/auth/profile'), {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -129,7 +136,7 @@ export const logout = async () => {
     try {
         const token = getToken();
         
-        const response = await fetch(`${BACKEND_URL}/api/auth/logout`, {
+        const response = await fetch(getApiUrl('/auth/logout'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

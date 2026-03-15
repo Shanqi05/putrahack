@@ -14,7 +14,25 @@ const JWT_SECRET = process.env.JWT_SECRET || 'triplegain-secret-key-2024';
 
 // Initialize Google Generative AI
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+
+// System prompt for the farmer assistant
+const systemPrompt = `You are TripleGain's AI Farmer Assistant - a knowledgeable and friendly agricultural expert.
+Your role is to help farmers with:
+✓ Disease identification and treatment
+✓ Pest management strategies
+✓ Crop selection for regions/seasons
+✓ Irrigation and soil health
+✓ Sustainable farming practices
+✓ Marketplace selling tips
+✓ Weather-related decisions
+
+Be conversational, encouraging, and practical. Reference previous messages in the conversation.
+Always suggest actionable steps. Keep responses focused but warm and supportive.`;
+
+// Initialize model without system instruction (to avoid compatibility issues)
+const model = genAI.getGenerativeModel({ 
+  model: 'gemini-pro'
+});
 
 // In-memory user storage (in production, use MongoDB/Firebase)
 const users = new Map();
@@ -434,6 +452,17 @@ app.post('/api/chatbot/ask', async (req, res) => {
         });
     } catch (error) {
         console.error('AI Chatbot Error:', error.message);
+        
+        // Check if it's a quota exceeded error
+        if (error.message && (error.message.includes('429') || error.message.includes('Quota exceeded'))) {
+            return res.status(503).json({
+                error: 'AI Service quota exceeded',
+                message: 'The AI assistant is temporarily unavailable due to daily usage limits. Please try again later or upgrade your API plan.',
+                isQuotaError: true,
+                fallbackReply: 'I apologize! The AI is temporarily unavailable, but here are some general tips: Ensure proper crop rotation, maintain soil health with regular testing, use integrated pest management, and stay updated with local weather forecasts.'
+            });
+        }
+        
         res.status(500).json({
             error: 'Failed to process your question',
             message: error.message || 'Please try again later'
@@ -450,62 +479,59 @@ app.post('/api/chatbot/chat', async (req, res) => {
     try {
         const { userId, message, farmingContext = {} } = req.body;
 
+        // 1. Validation
         if (!userId || !message || message.trim() === '') {
             return res.status(400).json({
                 error: 'userId and message are required',
-                example: { userId: 'user123', message: 'What crops can I grow in winter?' }
             });
         }
 
-        // Initialize conversation if new user
+        // 2. Initialize conversation if new user
         if (!conversations[userId]) {
             conversations[userId] = [];
         }
 
-        const systemPrompt = `You are TripleGain's AI Farmer Assistant - a knowledgeable and friendly agricultural expert.
-        Your role is to help farmers with:
-        ✓ Disease identification and treatment
-        ✓ Pest management strategies
-        ✓ Crop selection for regions/seasons
-        ✓ Irrigation and soil health
-        ✓ Sustainable farming practices
-        ✓ Marketplace selling tips
-        ✓ Weather-related decisions
-        
-        Be conversational, encouraging, and practical. Reference previous messages in the conversation.
-        Always suggest actionable steps. Keep responses focused but warm and supportive.`;
+        // 3. Map history correctly (Gemini expects 'user' and 'model' only)
+        const chatHistory = conversations[userId].map(msg => ({
+            role: msg.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: msg.text }]
+        }));
 
-        // Build chat with history
-        const chat = model.startChat({
-            history: conversations[userId].map(msg => ({
-                role: msg.role,
-                parts: [{ text: msg.text }]
-            })),
+        // 4. Initialize model with proper System Instructions
+        // This is much more stable than putting the prompt in history
+        const chatModel = genAI.getGenerativeModel({ 
+            model: "gemini-2.5-flash", // Use this stable version
+            systemInstruction: systemPrompt 
+        });
+
+        // 5. Start Chat with clean history
+        const chat = chatModel.startChat({
+            history: chatHistory,
             generationConfig: {
                 maxOutputTokens: 1024,
                 temperature: 0.8,
             },
         });
 
-        // Send new message
+        // 6. Send the new message
         const result = await chat.sendMessage(message);
         const assistantReply = result.response.text();
 
-        // Store conversation history
+        // 7. Update the local conversation memory
         conversations[userId].push(
             { role: 'user', text: message },
             { role: 'model', text: assistantReply }
         );
 
-        // Keep conversation history limited to last 10 exchanges
+        // Limit history to 20 items (10 turns) to prevent token bloat
         if (conversations[userId].length > 20) {
             conversations[userId] = conversations[userId].slice(-20);
         }
 
+        // 8. Success Response
         res.json({
             status: 'success',
             userId,
-            message: message,
             reply: assistantReply,
             farmingContext: {
                 cropType: farmingContext.cropType || 'Not specified',
@@ -515,11 +541,31 @@ app.post('/api/chatbot/chat', async (req, res) => {
             conversationLength: conversations[userId].length / 2,
             timestamp: new Date().toISOString()
         });
+
     } catch (error) {
         console.error('Multi-turn Chat Error:', error.message);
+        
+        // Error Handling for Quota (429)
+        if (error.message?.includes('429') || error.message?.includes('Quota')) {
+            return res.status(503).json({
+                error: 'AI Service quota exceeded',
+                message: 'The AI assistant is temporarily unavailable. Please try again in a few minutes.',
+                isQuotaError: true
+            });
+        }
+        
+        // Error Handling for Configuration/Model (404)
+        if (error.message?.includes('404') || error.message?.includes('not found')) {
+            return res.status(500).json({
+                error: 'AI Model configuration error',
+                message: 'The AI model is not properly configured. Check your model name and API key.',
+                isConfigError: true
+            });
+        }
+        
         res.status(500).json({
             error: 'Failed to process your message',
-            message: error.message || 'Please try again later'
+            message: error.message || 'Internal Server Error'
         });
     }
 });

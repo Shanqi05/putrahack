@@ -1,9 +1,16 @@
 // Weather Alert API service - TripleGain Backend
-const BACKEND_URL = 'http://localhost:5000';
+// Helper to build API URLs - uses Vite proxy in development, direct URL in production
+const getApiUrl = (endpoint) => {
+    if (import.meta.env.PROD) {
+        return `http://localhost:5000/api${endpoint}`;
+    } else {
+        return `/api${endpoint}`;
+    }
+};
 
 export const getWeatherAlert = async (latitude, longitude, cropType = '') => {
     try {
-        const response = await fetch(`${BACKEND_URL}/api/weather/alert`, {
+        const response = await fetch(getApiUrl('/weather/alert'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

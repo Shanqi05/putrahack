@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Loader, Smile, Paperclip } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const AIChatbot = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -14,10 +15,19 @@ const AIChatbot = () => {
     const [inputValue, setInputValue] = useState('');
     const [loading, setLoading] = useState(false);
     const messagesEndRef = useRef(null);
+    const { user } = useAuth();
 
-    // Generate a unique user ID (in production, use actual user ID from auth)
-    const userId = `farmer_${Math.random().toString(36).substr(2, 9)}`;
-    const BACKEND_URL = 'http://localhost:5000';
+    // Generate a unique user ID from auth or fallback
+    const userId = user?.id || user?.email || `farmer_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Helper to build API URLs - uses Vite proxy in development, direct URL in production
+    const getApiUrl = (endpoint) => {
+        if (import.meta.env.PROD) {
+            return `http://localhost:5000/api${endpoint}`;
+        } else {
+            return `/api${endpoint}`;
+        }
+    };
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -27,15 +37,32 @@ const AIChatbot = () => {
         scrollToBottom();
     }, [messages]);
 
-    const handleSendMessage = async (e) => {
-        e.preventDefault();
-        if (!inputValue.trim()) return;
+    // Get user's farming context from localStorage or auth
+    const getFarmingContext = () => {
+        const userData = localStorage.getItem('triplegain_user');
+        if (userData) {
+            try {
+                const parsed = JSON.parse(userData);
+                return {
+                    cropType: parsed.cropType || 'General',
+                    region: parsed.region || 'Not specified',
+                    season: 'Current'
+                };
+            } catch (e) {
+                return { cropType: 'General', region: 'Not specified', season: 'Current' };
+            }
+        }
+        return { cropType: 'General', region: 'Not specified', season: 'Current' };
+    };
+
+    const handleSendMessage = async (messageText = inputValue) => {
+        if (!messageText.trim()) return;
 
         // Add user message
         const userMessage = {
             id: messages.length + 1,
             type: 'user',
-            content: inputValue,
+            content: messageText,
             timestamp: new Date()
         };
 
@@ -45,24 +72,35 @@ const AIChatbot = () => {
 
         try {
             // Call backend API
-            const response = await fetch(`${BACKEND_URL}/api/chatbot/chat`, {
+            const response = await fetch(getApiUrl('/chatbot/chat'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
                     userId: userId,
-                    message: inputValue,
-                    farmingContext: {
-                        cropType: 'General',
-                        region: 'India',
-                        season: 'Current'
-                    }
+                    message: messageText,
+                    farmingContext: getFarmingContext()
                 })
             });
 
             if (!response.ok) {
-                throw new Error('Failed to get response from AI');
+                const errorData = await response.json().catch(() => ({}));
+                
+                // Check if it's a quota error with fallback reply
+                if (response.status === 503 && errorData.isQuotaError && errorData.fallbackReply) {
+                    const botMessage = {
+                        id: messages.length + 2,
+                        type: 'bot',
+                        content: '⚠️ ' + errorData.message + '\n\n' + errorData.fallbackReply,
+                        timestamp: new Date()
+                    };
+                    setMessages(prev => [...prev, botMessage]);
+                    setLoading(false);
+                    return;
+                }
+                
+                throw new Error(errorData.message || `API Error: ${response.status}`);
             }
 
             const data = await response.json();
@@ -70,7 +108,7 @@ const AIChatbot = () => {
             const botMessage = {
                 id: messages.length + 2,
                 type: 'bot',
-                content: data.reply || 'Sorry, I couldn\'t process your request.',
+                content: data.reply || data.fallbackReply || 'Sorry, I couldn\'t process your request.',
                 timestamp: new Date()
             };
             
@@ -80,7 +118,7 @@ const AIChatbot = () => {
             const errorMessage = {
                 id: messages.length + 2,
                 type: 'bot',
-                content: '⚠️ I\'m having trouble connecting to the AI service. Please make sure the backend server is running on port 5000. Error: ' + error.message,
+                content: '⚠️ Connection issue. Please check:\n1. Backend is running on port 5000\n2. Google AI API key is set in server/.env\n\nError: ' + error.message,
                 timestamp: new Date()
             };
             setMessages(prev => [...prev, errorMessage]);
@@ -88,6 +126,12 @@ const AIChatbot = () => {
             setLoading(false);
         }
     };
+
+    const quickActions = [
+        { emoji: '🌱', label: 'Diseases', message: 'What are the common crop diseases in my region and how can I prevent them?' },
+        { emoji: '💰', label: 'Pricing', message: 'How can I get better prices for my crops in the marketplace?' },
+        { emoji: '♻️', label: 'Leftover', message: 'How can I reduce crop waste and make use of leftover produce?' }
+    ];
 
     return (
         <>
@@ -154,22 +198,24 @@ const AIChatbot = () => {
                     <div className="border-t border-emerald-100 p-4 bg-emerald-50/50">
                         {/* Quick Actions */}
                         <div className="mb-4 flex gap-2 flex-wrap">
-                            <button className="text-xs bg-white border border-emerald-200 text-emerald-700 px-3 py-1 rounded-full hover:bg-emerald-50 transition-colors font-semibold">
-                                🌱 Diseases
-                            </button>
-                            <button className="text-xs bg-white border border-emerald-200 text-emerald-700 px-3 py-1 rounded-full hover:bg-emerald-50 transition-colors font-semibold">
-                                💰 Pricing
-                            </button>
-                            <button className="text-xs bg-white border border-emerald-200 text-emerald-700 px-3 py-1 rounded-full hover:bg-emerald-50 transition-colors font-semibold">
-                                ♻️ Leftover
-                            </button>
+                            {quickActions.map((action, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => handleSendMessage(action.message)}
+                                    disabled={loading}
+                                    className="text-xs bg-white border border-emerald-200 text-emerald-700 px-3 py-1 rounded-full hover:bg-emerald-50 hover:border-emerald-400 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {action.emoji} {action.label}
+                                </button>
+                            ))}
                         </div>
 
                         {/* Input Form */}
-                        <form onSubmit={handleSendMessage} className="flex gap-2">
+                        <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="flex gap-2">
                             <button
                                 type="button"
-                                className="text-emerald-600 hover:text-emerald-700 p-2"
+                                className="text-emerald-600 hover:text-emerald-700 p-2 transition-colors"
+                                title="Attach file"
                             >
                                 <Paperclip size={20} />
                             </button>
@@ -179,10 +225,12 @@ const AIChatbot = () => {
                                 onChange={(e) => setInputValue(e.target.value)}
                                 placeholder="Ask me anything..."
                                 className="flex-1 bg-white border-2 border-emerald-200 focus:border-emerald-500 outline-none rounded-2xl px-4 py-2 text-sm focus:ring-2 focus:ring-emerald-300/30 transition-all"
+                                disabled={loading}
                             />
                             <button
                                 type="button"
-                                className="text-emerald-600 hover:text-emerald-700 p-2"
+                                className="text-emerald-600 hover:text-emerald-700 p-2 transition-colors"
+                                title="Add emoji"
                             >
                                 <Smile size={20} />
                             </button>
@@ -190,6 +238,7 @@ const AIChatbot = () => {
                                 type="submit"
                                 disabled={loading || !inputValue.trim()}
                                 className="bg-emerald-500 hover:bg-emerald-600 text-white p-2 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                title="Send message"
                             >
                                 <Send size={20} />
                             </button>
