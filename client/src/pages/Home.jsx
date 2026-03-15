@@ -148,49 +148,49 @@ const images = [
     const crops = [
         {
             name: 'Tomato',
-            image: 'https://images.unsplash.com/photo-1505521181222-12a8c15ce29f?q=80&w=800',
+            image: 'https://images.unsplash.com/photo-1444731961956-751ed90465a5?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
             price: 'RM 3.50/kg',
             growtime: '60-85 days'
         },
         {
             name: 'Lettuce',
-            image: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?q=80&w=800',
+            image: 'https://images.unsplash.com/photo-1556781366-336f8353ba7c?q=80&w=880&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
             price: 'RM 4.00/piece',
             growtime: '45-60 days'
         },
         {
             name: 'Carrot',
-            image: 'https://images.unsplash.com/photo-1447789519551-79d440a2a0ae?q=80&w=800',
+            image: 'https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
             price: 'RM 2.80/kg',
             growtime: '70-80 days'
         },
         {
             name: 'Bell Pepper',
-            image: 'https://images.unsplash.com/photo-1525174711885-d5b0c3654921?q=80&w=800',
+            image: 'https://images.unsplash.com/photo-1601648764658-cf37e8c89b70?q=80&w=1171&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
             price: 'RM 5.50/kg',
             growtime: '75-90 days'
         },
         {
             name: 'Cucumber',
-            image: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=800',
+            image: 'https://images.unsplash.com/photo-1676043966926-c575c1ef320a?q=80&w=627&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
             price: 'RM 2.50/piece',
             growtime: '50-70 days'
         },
         {
             name: 'Broccoli',
-            image: 'https://images.unsplash.com/photo-1470789033566-c68f61800f27?q=80&w=800',
+            image: 'https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?q=80&w=901&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
             price: 'RM 4.20/piece',
             growtime: '55-100 days'
         },
         {
             name: 'Spinach',
-            image: 'https://images.unsplash.com/photo-1536379937592-d65cfbf3a36b?q=80&w=800',
+            image: 'https://images.unsplash.com/photo-1574316071802-0d684efa7bf5?q=80&w=735&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
             price: 'RM 3.80/bundle',
             growtime: '40-50 days'
         },
         {
             name: 'Pumpkin',
-            image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=800',
+            image: 'https://plus.unsplash.com/premium_photo-1666823706428-5d93ae18c1c0?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
             price: 'RM 6.50/kg',
             growtime: '80-120 days'
         }
