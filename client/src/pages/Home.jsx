@@ -133,12 +133,16 @@ const Home = () => {
     };
 
     // Agriculture Images
-    const images = [
-        "https://images.unsplash.com/photo-1500382017468-7049fae79eba?q=80&w=2000",
-        "https://images.unsplash.com/photo-1595433707802-6b2626ef1c91?q=80&w=2000",
-        "https://images.unsplash.com/photo-1488459716781-6f3ee3c3d1b4?q=80&w=2000",
-        "https://images.unsplash.com/photo-1500934266881-b72b27e84530?q=80&w=2000"
-    ];
+const images = [
+    // Hero: Aerial view of high-tech agriculture
+    "https://images.unsplash.com/photo-1560493676-04071c5f467b?q=80&w=2000&auto=format", 
+    // Disease Detection: Extreme macro of leaf veins
+    "https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?q=80&w=2000&auto=format",
+    // Marketplace: Vibrant, organized farm produce
+    "https://images.unsplash.com/photo-1533900298318-6b8da08a523e?auto=format&fit=crop&q=80&w=2000",
+    // Leftover: Golden hour field representing renewal
+    "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80&w=2000"
+];
 
     // Crop data
     const crops = [
