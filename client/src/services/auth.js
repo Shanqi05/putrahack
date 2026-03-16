@@ -131,6 +131,37 @@ export const getUserProfile = async () => {
     }
 };
 
+// Update User Profile
+export const updateProfile = async (updates) => {
+    try {
+        const token = getToken();
+        
+        if (!token) {
+            throw new Error('No token found. Please login.');
+        }
+
+        const response = await fetch(getApiUrl('/auth/profile'), {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(updates)
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to update profile');
+        }
+
+        const data = await response.json();
+        return data.user;
+    } catch (error) {
+        console.error('Update Profile Error:', error);
+        throw error;
+    }
+};
+
 // Logout
 export const logout = async () => {
     try {

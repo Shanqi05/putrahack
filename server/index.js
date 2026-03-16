@@ -105,7 +105,7 @@ app.post('/api/auth/signup', async (req, res) => {
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Store user
+        // Create user object
         const newUser = {
             id: `user_${Date.now()}`,
             email,
@@ -113,13 +113,16 @@ app.post('/api/auth/signup', async (req, res) => {
             fullName,
             cropType: cropType || 'General',
             region: region || 'Malaysia',
-            userType: userType || 'farmer', // 'farmer' or 'buyer'
+            userType: userType || 'farmer',
             createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
             profilePicture: null,
             isVerified: false
         };
 
+        // Save to in-memory storage
         users.set(email, newUser);
+        console.log('✓ User registered:', email);
 
         // Generate JWT token
         const token = jwt.sign(
@@ -164,8 +167,9 @@ app.post('/api/auth/login', async (req, res) => {
             });
         }
 
-        // Find user
+        // Find user in in-memory storage
         const user = users.get(email);
+
         if (!user) {
             return res.status(401).json({
                 error: 'Invalid credentials',
@@ -214,7 +218,7 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // Get User Profile (requires token)
-app.get('/api/auth/profile', (req, res) => {
+app.get('/api/auth/profile', async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
         
@@ -226,7 +230,24 @@ app.get('/api/auth/profile', (req, res) => {
         }
 
         const decoded = jwt.verify(token, JWT_SECRET);
-        const user = users.get(decoded.email);
+        
+        // Try to get from Firestore first
+        let user = null;
+        try {
+            const userDocRef = doc(db, 'users', decoded.email);
+            const userDoc = await getDoc(userDocRef);
+            if (userDoc.exists()) {
+                user = userDoc.data();
+            }
+        } catch (firestoreError) {
+            console.error('Firestore fetch error:', firestoreError);
+            // Fallback to in-memory
+            user = users.get(decoded.email);
+        }
+
+        if (!user) {
+            user = users.get(decoded.email);
+        }
 
         if (!user) {
             return res.status(404).json({
@@ -243,11 +264,87 @@ app.get('/api/auth/profile', (req, res) => {
                 userType: user.userType,
                 cropType: user.cropType,
                 region: user.region,
-                createdAt: user.createdAt
+                createdAt: user.createdAt,
+                updatedAt: user.updatedAt || user.createdAt
             }
         });
     } catch (error) {
         console.error('Profile Error:', error);
+        res.status(401).json({
+            error: 'Invalid or expired token',
+            message: error.message
+        });
+    }
+});
+
+// Update User Profile (requires token)
+app.put('/api/auth/profile', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        
+        if (!token) {
+            return res.status(401).json({
+                error: 'No token provided',
+                message: 'Please provide a valid token in Authorization header'
+            });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        let user = users.get(decoded.email);
+
+        if (!user) {
+            return res.status(404).json({
+                error: 'User not found'
+            });
+        }
+
+        // Update user fields
+        const { fullName, cropType, region, userType, profilePicture } = req.body;
+        
+        if (fullName) user.fullName = fullName;
+        if (cropType) user.cropType = cropType;
+        if (region) user.region = region;
+        if (userType) user.userType = userType;
+        if (profilePicture) user.profilePicture = profilePicture;
+        
+        user.updatedAt = new Date().toISOString();
+
+        // Save to Firestore
+        try {
+            await updateDoc(doc(db, 'users', decoded.email), {
+                fullName: user.fullName,
+                cropType: user.cropType,
+                region: user.region,
+                userType: user.userType,
+                profilePicture: user.profilePicture,
+                updatedAt: user.updatedAt
+            });
+            console.log('✓ Profile updated in Firestore:', decoded.email);
+        } catch (firestoreError) {
+            console.error('Firestore update error:', firestoreError);
+            // Continue with in-memory update as fallback
+        }
+
+        // Update in-memory storage
+        users.set(decoded.email, user);
+
+        res.json({
+            status: 'success',
+            message: 'Profile updated successfully!',
+            user: {
+                id: user.id,
+                email: user.email,
+                fullName: user.fullName,
+                userType: user.userType,
+                cropType: user.cropType,
+                region: user.region,
+                profilePicture: user.profilePicture,
+                createdAt: user.createdAt,
+                updatedAt: user.updatedAt
+            }
+        });
+    } catch (error) {
+        console.error('Profile Update Error:', error);
         res.status(401).json({
             error: 'Invalid or expired token',
             message: error.message

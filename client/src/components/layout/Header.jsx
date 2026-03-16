@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Leaf, User, ChevronDown, LogOut } from 'lucide-react';
+import { Leaf, User, ChevronDown, LogOut, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 // Refined NavItem: The main title is now a Link
@@ -51,10 +51,12 @@ const NavItem = ({ title, items, path }) => {
 const Header = () => {
   const { isLoggedIn, logout, loading } = useAuth();
   const navigate = useNavigate();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate('/');
+    setShowLogoutConfirm(false);
   };
 
   return (
@@ -124,7 +126,7 @@ const Header = () => {
               </div>
             </Link>
             <button
-              onClick={handleLogout}
+              onClick={() => setShowLogoutConfirm(true)}
               className="text-slate-500 hover:text-red-600 transition-colors p-2"
               title="Logout"
             >
@@ -148,6 +150,39 @@ const Header = () => {
           </div>
         )}
       </div>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[2000]">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-[90%] animate-in fade-in zoom-in-95 duration-300">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="bg-red-100 p-3 rounded-full">
+                <AlertCircle size={24} className="text-red-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-slate-900">Confirm Logout</h2>
+            </div>
+            
+            <p className="text-slate-600 mb-6">
+              Are you sure you want to logout? You'll need to login again to access your account.
+            </p>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="px-6 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleLogout}
+                className="px-6 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold transition-all shadow-lg shadow-red-200"
+              >
+                Yes, Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 };
