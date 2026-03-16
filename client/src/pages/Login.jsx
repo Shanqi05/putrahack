@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, Leaf, ArrowRight } from 'lucide-react';
-import { login as apiLogin } from '../services/auth';
+import { Mail, Lock, Eye, EyeOff, Leaf, ArrowRight, CheckCircle } from 'lucide-react';
+import { login as apiLogin, loginWithGoogle } from '../services/auth';
 import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [userType, setUserType] = useState('farmer');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -19,12 +20,26 @@ const Login = () => {
         setError('');
 
         try {
-            const result = await apiLogin(email, password);
+            const result = await apiLogin(email, password, userType);
             // Update global auth context with user info and token
             setAuthUser(result.user, result.token);
             navigate('/');
         } catch (err) {
             setError(err.message || 'Login failed. Please check your credentials.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGoogleLogin = async () => {
+        setLoading(true);
+        setError('');
+        try {
+            const result = await loginWithGoogle(userType);
+            setAuthUser(result.user, result.token);
+            navigate('/');
+        } catch (err) {
+            setError(err.message || 'Google login failed. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -52,6 +67,47 @@ const Login = () => {
                     )}
 
                     <form onSubmit={handleLogin} className="space-y-5">
+                        {/* Role Selection */}
+                        <div>
+                            <label className="block text-emerald-900 font-bold mb-3">I am a:</label>
+                            <div className="grid grid-cols-2 gap-4">
+                                <label className={`relative cursor-pointer p-4 rounded-2xl border-2 transition-all ${userType === 'farmer'
+                                        ? 'border-emerald-500 bg-emerald-50'
+                                        : 'border-emerald-200 hover:border-emerald-300 bg-white'
+                                    }`}>
+                                    <input
+                                        type="radio"
+                                        name="userType"
+                                        value="farmer"
+                                        checked={userType === 'farmer'}
+                                        onChange={(e) => setUserType(e.target.value)}
+                                        className="hidden"
+                                    />
+                                    <div className="flex items-center gap-2">
+                                        <CheckCircle size={20} className={userType === 'farmer' ? 'text-emerald-600' : 'text-gray-300'} />
+                                        <span className="font-bold text-emerald-900">Farmer</span>
+                                    </div>
+                                </label>
+                                <label className={`relative cursor-pointer p-4 rounded-2xl border-2 transition-all ${userType === 'buyer'
+                                        ? 'border-emerald-500 bg-emerald-50'
+                                        : 'border-emerald-200 hover:border-emerald-300 bg-white'
+                                    }`}>
+                                    <input
+                                        type="radio"
+                                        name="userType"
+                                        value="buyer"
+                                        checked={userType === 'buyer'}
+                                        onChange={(e) => setUserType(e.target.value)}
+                                        className="hidden"
+                                    />
+                                    <div className="flex items-center gap-2">
+                                        <CheckCircle size={20} className={userType === 'buyer' ? 'text-emerald-600' : 'text-gray-300'} />
+                                        <span className="font-bold text-emerald-900">Buyer</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
                         {/* Email Input */}
                         <div>
                             <label className="block text-emerald-900 font-bold mb-2 flex items-center gap-2">
@@ -126,15 +182,15 @@ const Login = () => {
                         <div className="flex-1 h-px bg-emerald-200"></div>
                     </div>
 
-                    {/* Social Login Buttons */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <button className="bg-white border-2 border-emerald-200 text-emerald-900 font-bold py-3 rounded-2xl hover:bg-emerald-50 transition-all">
-                            Google
-                        </button>
-                        <button className="bg-white border-2 border-emerald-200 text-emerald-900 font-bold py-3 rounded-2xl hover:bg-emerald-50 transition-all">
-                            GitHub
-                        </button>
-                    </div>
+                    {/* Google Login Button */}
+                    <button
+                        type="button"
+                        onClick={handleGoogleLogin}
+                        disabled={loading}
+                        className="w-full bg-white border-2 border-emerald-200 text-emerald-900 font-bold py-3 rounded-2xl hover:bg-emerald-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {loading ? 'Loading...' : 'Continue with Google'}
+                    </button>
 
                     {/* Sign Up Link */}
                     <p className="text-center text-emerald-700 mt-8 font-light">

@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Microscope, ShoppingCart, Recycle, Zap, Cloud, MapPin, MessageCircle, AlertCircle, Droplets, Wind } from 'lucide-react';
 import { getWeatherAlert } from '../services/weather';
+import { useAuth } from '../context/AuthContext';
 
 // Chatbot Logo Component (Fixed on all pages)
 const ChatbotLogo = () => {
@@ -30,38 +31,93 @@ const ChatbotLogo = () => {
     );
 };
 
-const ServiceSection = ({ title, description, icon: Icon, link, image }) => (
-    <section className="relative min-w-full h-screen flex items-center justify-center snap-start overflow-hidden group">
-        <div className="absolute inset-0 bg-cover bg-center opacity-40"
-            style={{ backgroundImage: `url(${image})` }}>
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/70 via-green-300/60 to-white/80"></div>
-        </div>
+const ServiceSection = ({ title, description, icon: Icon, link, image }) => {
+    const navigate = useNavigate();
+    const { isLoggedIn } = useAuth();
+    const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
-        <div className="absolute top-0 left-1/2 w-px h-32 bg-gradient-to-b from-emerald-500 to-transparent opacity-60"></div>
+    const handleExploreClick = () => {
+        if (!isLoggedIn()) {
+            setShowLoginPrompt(true);
+        } else {
+            navigate(link);
+        }
+    };
 
-        <div className="relative z-10 text-center px-8 max-w-5xl animate-fadeIn">
-            <div className="flex justify-center mb-8 animate-slideUp" style={{ animationDelay: '0.1s' }}>
-                <div className="p-6 bg-gradient-to-br from-emerald-400/40 to-green-300/30 backdrop-blur-xl rounded-3xl border border-emerald-300/60 shadow-2xl hover:shadow-emerald-400/50">
-                    <Icon size={52} className="text-emerald-700 drop-shadow-lg" />
+    const handleLoginConfirm = () => {
+        setShowLoginPrompt(false);
+        navigate('/login');
+    };
+
+    return (
+        <>
+            <section className="relative min-w-full h-screen flex items-center justify-center snap-start overflow-hidden group">
+                <div className="absolute inset-0 bg-cover bg-center opacity-40"
+                    style={{ backgroundImage: `url(${image})` }}>
+                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/70 via-green-300/60 to-white/80"></div>
                 </div>
-            </div>
 
-            <h2 className="text-5xl md:text-7xl lg:text-8xl font-black text-emerald-900 mb-6 tracking-tight uppercase animate-slideUp" style={{ animationDelay: '0.2s' }}>
-                {title}
-            </h2>
+                <div className="absolute top-0 left-1/2 w-px h-32 bg-gradient-to-b from-emerald-500 to-transparent opacity-60"></div>
 
-            <p className="text-base md:text-xl lg:text-2xl text-green-900/80 mb-12 max-w-3xl mx-auto leading-relaxed font-light animate-slideUp" style={{ animationDelay: '0.3s' }}>
-                {description}
-            </p>
+                <div className="relative z-10 text-center px-8 max-w-5xl animate-fadeIn">
+                    <div className="flex justify-center mb-8 animate-slideUp" style={{ animationDelay: '0.1s' }}>
+                        <div className="p-6 bg-gradient-to-br from-emerald-400/40 to-green-300/30 backdrop-blur-xl rounded-3xl border border-emerald-300/60 shadow-2xl hover:shadow-emerald-400/50">
+                            <Icon size={52} className="text-emerald-700 drop-shadow-lg" />
+                        </div>
+                    </div>
 
-            <Link to={link} className="inline-block animate-slideUp" style={{ animationDelay: '0.4s' }}>
-                <button className="px-12 md:px-16 py-4 bg-gradient-to-r from-emerald-500 to-green-400 text-white font-bold rounded-full hover:from-emerald-400 hover:to-green-300 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 shadow-lg hover:shadow-emerald-400/50 border border-white/40">
-                    Explore Now
-                </button>
-            </Link>
-        </div>
-    </section>
-);
+                    <h2 className="text-5xl md:text-7xl lg:text-8xl font-black text-emerald-900 mb-6 tracking-tight uppercase animate-slideUp" style={{ animationDelay: '0.2s' }}>
+                        {title}
+                    </h2>
+
+                    <p className="text-base md:text-xl lg:text-2xl text-green-900/80 mb-12 max-w-3xl mx-auto leading-relaxed font-light animate-slideUp" style={{ animationDelay: '0.3s' }}>
+                        {description}
+                    </p>
+
+                    <button
+                        onClick={handleExploreClick}
+                        className="inline-block animate-slideUp cursor-pointer"
+                        style={{ animationDelay: '0.4s' }}>
+                        <div className="px-12 md:px-16 py-4 bg-gradient-to-r from-emerald-500 to-green-400 text-white font-bold rounded-full hover:from-emerald-400 hover:to-green-300 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 shadow-lg hover:shadow-emerald-400/50 border border-white/40">
+                            Explore Now
+                        </div>
+                    </button>
+                </div>
+            </section>
+
+            {/* Login Prompt Modal */}
+            {showLoginPrompt && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] animate-fadeIn">
+                    <div className="bg-white rounded-3xl p-8 md:p-10 max-w-md w-full mx-4 shadow-2xl border border-emerald-200 animate-slideUp">
+                        <div className="flex justify-center mb-6">
+                            <div className="p-4 bg-gradient-to-br from-emerald-400/40 to-green-300/30 rounded-2xl">
+                                <AlertCircle size={40} className="text-emerald-700" />
+                            </div>
+                        </div>
+                        <h2 className="text-2xl font-black text-emerald-900 text-center mb-4">Login Required</h2>
+                        <p className="text-emerald-700/80 text-center mb-8 font-light">
+                            Please log in to explore new function
+                        </p>
+                        <div className="flex gap-4">
+                            <button
+                                onClick={() => setShowLoginPrompt(false)}
+                                className="flex-1 px-6 py-3 border-2 border-emerald-300 text-emerald-700 font-bold rounded-2xl hover:bg-emerald-50 transition-all duration-300"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleLoginConfirm}
+                                className="flex-1 px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-400 text-white font-bold rounded-2xl hover:from-emerald-400 hover:to-green-300 transition-all duration-300 transform hover:scale-105 shadow-lg"
+                            >
+                                Login
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
+    );
+};
 
 // Crop Gallery Item Component
 const CropCard = ({ name, image, price, growtime }) => {

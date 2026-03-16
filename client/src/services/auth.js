@@ -1,4 +1,7 @@
 // Authentication Service - TripleGain Backend
+import { signInWithPopup, signOut as firebaseSignOut } from 'firebase/auth';
+import { auth, googleProvider } from '../firebase';
+
 // Helper to build API URLs - uses Vite proxy in development, direct URL in production
 const getApiUrl = (endpoint) => {
     if (import.meta.env.PROD) {
@@ -65,7 +68,7 @@ export const signup = async (email, password, fullName, userType = 'farmer', cro
 };
 
 // Login API
-export const login = async (email, password) => {
+export const login = async (email, password, userType = 'farmer') => {
     try {
         const response = await fetch(getApiUrl('/auth/login'), {
             method: 'POST',
@@ -74,7 +77,8 @@ export const login = async (email, password) => {
             },
             body: JSON.stringify({
                 email,
-                password
+                password,
+                userType
             })
         });
 
@@ -97,6 +101,54 @@ export const login = async (email, password) => {
         };
     } catch (error) {
         console.error('Login Error:', error);
+        throw error;
+    }
+};
+
+// Google Sign In
+export const loginWithGoogle = async (userType = 'farmer') => {
+    try {
+        const result = await signInWithPopup(auth, googleProvider);
+        const user = result.user;
+        
+        // Get Firebase ID token
+        const token = await user.getIdToken();
+        
+        // Send to backend for verification and user creation/update
+        const response = await fetch(getApiUrl('/auth/social-login'), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                idToken: token,
+                provider: 'google',
+                email: user.email,
+                fullName: user.displayName,
+                profilePicture: user.photoURL,
+                userType
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Google login failed');
+        }
+
+        const data = await response.json();
+        
+        // Store token
+        if (data.token) {
+            setToken(data.token);
+        }
+
+        return {
+            status: 'success',
+            user: data.user,
+            token: data.token
+        };
+    } catch (error) {
+        console.error('Google Login Error:', error);
         throw error;
     }
 };

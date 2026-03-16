@@ -11,7 +11,8 @@ const Signup = () => {
         password: '',
         confirmPassword: '',
         region: '',
-        userType: 'farmer' // or 'buyer'
+        userType: 'farmer', // or 'buyer'
+        agreedToTerms: false
     });
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -21,8 +22,11 @@ const Signup = () => {
     const { login: setAuthUser } = useAuth();
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        const { name, value, type, checked } = e.target;
+        setFormData(prev => ({ 
+            ...prev, 
+            [name]: type === 'checkbox' ? checked : value 
+        }));
     };
 
     const handleSignup = async (e) => {
@@ -31,6 +35,10 @@ const Signup = () => {
         setError('');
 
         try {
+            if (!formData.agreedToTerms) {
+                throw new Error('You must agree to the Terms of Service and Privacy Policy');
+            }
+
             if (formData.password !== formData.confirmPassword) {
                 throw new Error('Passwords do not match');
             }
@@ -236,8 +244,14 @@ const Signup = () => {
 
                         {/* Terms Checkbox */}
                         <label className="flex items-start gap-3 text-emerald-700 cursor-pointer">
-                            <input type="checkbox" className="w-5 h-5 mt-1 rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500" />
-                            <span className="font-light text-sm">I agree to the Terms of Service and Privacy Policy</span>
+                            <input 
+                                type="checkbox" 
+                                name="agreedToTerms"
+                                checked={formData.agreedToTerms}
+                                onChange={handleChange}
+                                className="w-5 h-5 mt-1 rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500" 
+                            />
+                            <span className="font-light text-sm">I agree to the <span className="font-bold">Terms of Service</span> and <span className="font-bold">Privacy Policy</span></span>
                         </label>
 
                         {/* Sign Up Button */}

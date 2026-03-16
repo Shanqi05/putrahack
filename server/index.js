@@ -5,12 +5,34 @@ import axios from 'axios';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { initializeApp } from 'firebase/app';
+import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, query, where, getDocs } from 'firebase/firestore';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'triplegain-secret-key-2024';
+
+// Initialize Firebase
+const firebaseConfig = {
+    apiKey: process.env.FIREBASE_API_KEY,
+    authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.FIREBASE_APP_ID
+};
+
+let db = null;
+try {
+    const firebaseApp = initializeApp(firebaseConfig);
+    db = getFirestore(firebaseApp);
+    console.log('✓ Firebase Firestore initialized successfully');
+} catch (error) {
+    console.warn('⚠️ Firebase initialization warning:', error.message);
+    console.log('📝 Please configure Firebase credentials in your .env file');
+}
 
 // Initialize Google Generative AI
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
@@ -34,8 +56,7 @@ const model = genAI.getGenerativeModel({
   model: 'gemini-pro'
 });
 
-// In-memory user storage (in production, use MongoDB/Firebase)
-const users = new Map();
+// All data stored in Firestore only (no in-memory storage)
 
 // Middleware
 app.use(cors());
@@ -94,12 +115,19 @@ app.post('/api/auth/signup', async (req, res) => {
             });
         }
 
-        // Check if user already exists
-        if (users.has(email)) {
-            return res.status(409).json({
-                error: 'User already exists',
-                message: 'An account with this email already exists. Please login instead.'
-            });
+        // Check if user already exists in Firestore
+        if (db) {
+            try {
+                const userDoc = await getDoc(doc(db, 'users', email));
+                if (userDoc.exists()) {
+                    return res.status(409).json({
+                        error: 'User already exists',
+                        message: 'An account with this email already exists. Please login instead.'
+                    });
+                }
+            } catch (firestoreError) {
+                console.error('Firestore check error:', firestoreError);
+            }
         }
 
         // Hash password
@@ -117,12 +145,28 @@ app.post('/api/auth/signup', async (req, res) => {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             profilePicture: null,
-            isVerified: false
+            isVerified: false,
+            loginProvider: 'email'
         };
 
-        // Save to in-memory storage
-        users.set(email, newUser);
-        console.log('✓ User registered:', email);
+        // Save to Firestore (ONLY storage)
+        if (!db) {
+            return res.status(500).json({
+                error: 'Database error',
+                message: 'Firebase Firestore is not initialized'
+            });
+        }
+
+        try {
+            await setDoc(doc(db, 'users', email), newUser);
+            console.log('✅ SUCCESS: User registered in Firestore:', email);
+        } catch (firestoreError) {
+            console.error('❌ FIRESTORE SAVE ERROR:', firestoreError.message || firestoreError);
+            return res.status(500).json({
+                error: 'Failed to save user data',
+                message: firestoreError.message || 'Firestore error occurred'
+            });
+        }
 
         // Generate JWT token
         const token = jwt.sign(
@@ -157,18 +201,38 @@ app.post('/api/auth/signup', async (req, res) => {
 // Login Endpoint
 app.post('/api/auth/login', async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password, userType } = req.body;
 
         // Validation
         if (!email || !password) {
             return res.status(400).json({
                 error: 'Missing email or password',
-                required: ['email', 'password']
+                required: ['email', 'password', 'userType']
             });
         }
 
-        // Find user in in-memory storage
-        const user = users.get(email);
+        // Fetch user from Firestore
+        if (!db) {
+            return res.status(500).json({
+                error: 'Database error',
+                message: 'Firebase Firestore is not initialized'
+            });
+        }
+
+        let user = null;
+        try {
+            const userDoc = await getDoc(doc(db, 'users', email));
+            if (userDoc.exists()) {
+                user = userDoc.data();
+                console.log('✅ User fetched from Firestore:', email);
+            }
+        } catch (firestoreError) {
+            console.error('❌ Firestore fetch error:', firestoreError.message || firestoreError);
+            return res.status(500).json({
+                error: 'Database error',
+                message: 'Failed to fetch user data'
+            });
+        }
 
         if (!user) {
             return res.status(401).json({
@@ -184,6 +248,23 @@ app.post('/api/auth/login', async (req, res) => {
                 error: 'Invalid credentials',
                 message: 'Email or password is incorrect'
             });
+        }
+
+        // Update userType if provided
+        if (userType && userType !== user.userType) {
+            user.userType = userType;
+            user.updatedAt = new Date().toISOString();
+
+            // Update in Firestore
+            try {
+                await updateDoc(doc(db, 'users', email), {
+                    userType: user.userType,
+                    updatedAt: user.updatedAt
+                });
+                console.log('✅ User type updated in Firestore:', email);
+            } catch (firestoreError) {
+                console.error('❌ Firestore update error:', firestoreError.message || firestoreError);
+            }
         }
 
         // Generate JWT token
@@ -231,22 +312,28 @@ app.get('/api/auth/profile', async (req, res) => {
 
         const decoded = jwt.verify(token, JWT_SECRET);
         
-        // Try to get from Firestore first
+        // Fetch from Firestore
+        if (!db) {
+            return res.status(500).json({
+                error: 'Database error',
+                message: 'Firebase Firestore is not initialized'
+            });
+        }
+
         let user = null;
         try {
             const userDocRef = doc(db, 'users', decoded.email);
             const userDoc = await getDoc(userDocRef);
             if (userDoc.exists()) {
                 user = userDoc.data();
+                console.log('✅ Profile fetched from Firestore:', decoded.email);
             }
         } catch (firestoreError) {
-            console.error('Firestore fetch error:', firestoreError);
-            // Fallback to in-memory
-            user = users.get(decoded.email);
-        }
-
-        if (!user) {
-            user = users.get(decoded.email);
+            console.error('❌ Firestore fetch error:', firestoreError.message || firestoreError);
+            return res.status(500).json({
+                error: 'Database error',
+                message: 'Failed to fetch profile'
+            });
         }
 
         if (!user) {
@@ -290,7 +377,29 @@ app.put('/api/auth/profile', async (req, res) => {
         }
 
         const decoded = jwt.verify(token, JWT_SECRET);
-        let user = users.get(decoded.email);
+        
+        // Fetch from Firestore
+        if (!db) {
+            return res.status(500).json({
+                error: 'Database error',
+                message: 'Firebase Firestore is not initialized'
+            });
+        }
+
+        let user = null;
+        try {
+            const userDoc = await getDoc(doc(db, 'users', decoded.email));
+            if (userDoc.exists()) {
+                user = userDoc.data();
+                console.log('✅ User fetched from Firestore for update:', decoded.email);
+            }
+        } catch (firestoreError) {
+            console.error('❌ Firestore fetch error:', firestoreError.message || firestoreError);
+            return res.status(500).json({
+                error: 'Database error',
+                message: 'Failed to fetch user data'
+            });
+        }
 
         if (!user) {
             return res.status(404).json({
@@ -309,7 +418,7 @@ app.put('/api/auth/profile', async (req, res) => {
         
         user.updatedAt = new Date().toISOString();
 
-        // Save to Firestore
+        // Update in Firestore
         try {
             await updateDoc(doc(db, 'users', decoded.email), {
                 fullName: user.fullName,
@@ -319,14 +428,14 @@ app.put('/api/auth/profile', async (req, res) => {
                 profilePicture: user.profilePicture,
                 updatedAt: user.updatedAt
             });
-            console.log('✓ Profile updated in Firestore:', decoded.email);
+            console.log('✅ Profile updated in Firestore:', decoded.email);
         } catch (firestoreError) {
-            console.error('Firestore update error:', firestoreError);
-            // Continue with in-memory update as fallback
+            console.error('❌ Firestore update error:', firestoreError.message || firestoreError);
+            return res.status(500).json({
+                error: 'Failed to update profile',
+                message: firestoreError.message || 'Firestore error occurred'
+            });
         }
-
-        // Update in-memory storage
-        users.set(decoded.email, user);
 
         res.json({
             status: 'success',
@@ -360,6 +469,137 @@ app.post('/api/auth/logout', (req, res) => {
         status: 'success',
         message: 'Logged out successfully. Please remove the token from localStorage.'
     });
+});
+
+// Social Login Endpoint (Google Only)
+app.post('/api/auth/social-login', async (req, res) => {
+    try {
+        const { email, fullName, profilePicture, provider, userType } = req.body;
+
+        // Validation
+        if (!email || !provider) {
+            return res.status(400).json({
+                error: 'Missing required fields',
+                required: ['email', 'provider']
+            });
+        }
+
+        // Check if user exists in Firestore
+        if (!db) {
+            return res.status(500).json({
+                error: 'Database error',
+                message: 'Firebase Firestore is not initialized'
+            });
+        }
+
+        let user = null;
+        let isNewUser = false;
+
+        try {
+            const userDoc = await getDoc(doc(db, 'users', email));
+            if (userDoc.exists()) {
+                user = userDoc.data();
+                console.log(`✅ User fetched from Firestore via ${provider}:`, email);
+            }
+        } catch (firestoreError) {
+            console.error('❌ Firestore fetch error:', firestoreError.message || firestoreError);
+            return res.status(500).json({
+                error: 'Database error',
+                message: 'Failed to fetch user data'
+            });
+        }
+
+        // If user doesn't exist, create new account
+        if (!user) {
+            user = {
+                id: `user_${Date.now()}`,
+                email,
+                password: null, // No password for social login
+                fullName: fullName || email.split('@')[0],
+                cropType: 'General',
+                region: 'Malaysia',
+                userType: userType || 'farmer', // Use provided userType or default to farmer
+                profilePicture: profilePicture || null,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                isVerified: true, // Social login users are verified
+                loginProvider: provider
+            };
+            isNewUser = true;
+
+            // Save to Firestore
+            try {
+                await setDoc(doc(db, 'users', email), user);
+                console.log(`✅ New user created in Firestore via ${provider}:`, email);
+            } catch (firestoreError) {
+                console.error('❌ Firestore save error:', firestoreError.message || firestoreError);
+                return res.status(500).json({
+                    error: 'Failed to create account',
+                    message: firestoreError.message || 'Firestore error occurred'
+                });
+            }
+        } else {
+            // Update existing user's info if provided
+            let updateNeeded = false;
+
+            if (profilePicture && !user.profilePicture) {
+                user.profilePicture = profilePicture;
+                updateNeeded = true;
+            }
+
+            if (userType && userType !== user.userType) {
+                user.userType = userType;
+                updateNeeded = true;
+            }
+
+            if (updateNeeded) {
+                user.updatedAt = new Date().toISOString();
+
+                // Update in Firestore
+                try {
+                    await updateDoc(doc(db, 'users', email), {
+                        profilePicture: user.profilePicture,
+                        userType: user.userType,
+                        updatedAt: user.updatedAt
+                    });
+                    console.log(`✅ User updated in Firestore via ${provider}:`, email);
+                } catch (firestoreError) {
+                    console.error('❌ Firestore update error:', firestoreError.message || firestoreError);
+                }
+            }
+            console.log(`✓ User logged in via ${provider}:`, email);
+        }
+
+        // Generate JWT token
+        const token = jwt.sign(
+            { id: user.id, email: user.email },
+            JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+
+        res.json({
+            status: 'success',
+            message: `Login successful via ${provider}!`,
+            user: {
+                id: user.id,
+                email: user.email,
+                fullName: user.fullName,
+                userType: user.userType,
+                cropType: user.cropType,
+                region: user.region,
+                profilePicture: user.profilePicture,
+                createdAt: user.createdAt
+            },
+            token,
+            expiresIn: '7 days'
+        });
+    } catch (error) {
+        console.error('Social Login Error:', error);
+        res.status(500).json({
+            error: 'Social login failed',
+            message: error.message
+        });
+    }
 });
 
 // Routes (to be implemented)

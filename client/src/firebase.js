@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
@@ -32,5 +32,12 @@ try {
     console.log('📝 Please configure your Firebase credentials in src/firebase.js');
 }
 
-export { app, auth, db, storage };
+// Initialize providers
+const googleProvider = new GoogleAuthProvider();
+
+// Configure providers
+googleProvider.addScope('profile');
+googleProvider.addScope('email');
+
+export { app, auth, db, storage, googleProvider };
 export default app;
