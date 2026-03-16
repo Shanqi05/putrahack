@@ -138,7 +138,7 @@ const AIChatbot = () => {
             {/* Chat Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="fixed bottom-8 right-8 z-[998] bg-gradient-to-br from-emerald-400 to-green-500 hover:from-emerald-500 hover:to-green-600 text-white rounded-full p-4 shadow-2xl hover:shadow-emerald-400/50 transition-all duration-300 transform hover:scale-110 border-2 border-white/30"
+                className="fixed bottom-8 right-8 z-[9998] bg-gradient-to-br from-emerald-400 to-green-500 hover:from-emerald-500 hover:to-green-600 text-white rounded-full p-4 shadow-2xl hover:shadow-emerald-400/50 transition-all duration-300 transform hover:scale-110 border-2 border-white/30"
             >
                 {isOpen ? (
                     <X size={28} />
@@ -149,7 +149,7 @@ const AIChatbot = () => {
 
             {/* Chat Window */}
             {isOpen && (
-                <div className="fixed bottom-24 right-8 z-[997] w-96 h-[600px] bg-white rounded-3xl shadow-2xl border border-emerald-100 overflow-hidden animate-in fade-in slide-in-from-bottom-4 flex flex-col">
+                <div className="fixed bottom-24 right-8 z-[9999] w-96 h-[600px] bg-white rounded-3xl shadow-2xl border border-emerald-100 overflow-hidden animate-in fade-in slide-in-from-bottom-4 flex flex-col">
                     {/* Header */}
                     <div className="bg-gradient-to-r from-emerald-500 to-green-600 text-white p-6 mb-4">
                         <h3 className="text-xl font-black mb-1">TripleGain AI Assistant</h3>
