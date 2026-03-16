@@ -64,10 +64,10 @@ const Header = () => {
       
       {/* Brand Logo */}
       <Link to="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
-        <div className="bg-emerald-500 p-2 rounded-xl text-white shadow-md">
+        <div className="bg-gradient-to-br from-[#064E3B] via-[#065F46] to-[#10B981] p-2 rounded-xl text-white shadow-md hover:shadow-lg transition-shadow">
           <Leaf size={24} fill="currentColor" />
         </div>
-        <span className="text-2xl font-black bg-gradient-to-r from-emerald-600 to-green-500 bg-clip-text text-transparent tracking-tighter">
+        <span className="text-2xl font-black bg-gradient-to-r from-[#064E3B] via-[#065F46] to-[#10B981] bg-clip-text text-transparent tracking-tighter">
           TripleGain
         </span>
       </Link>

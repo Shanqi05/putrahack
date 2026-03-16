@@ -73,7 +73,7 @@ const Signup = () => {
             <div className="max-w-2xl mx-auto">
                 {/* Logo Section */}
                 <div className="flex items-center justify-center mb-8">
-                    <div className="bg-gradient-to-br from-emerald-400 to-green-500 p-3 rounded-2xl">
+                    <div className="bg-gradient-to-br from-[#064E3B] via-[#065F46] to-[#10B981] p-3 rounded-2xl">
                         <Leaf size={32} className="text-white" fill="white" />
                     </div>
                 </div>
