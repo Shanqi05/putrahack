@@ -59,8 +59,8 @@ const Signup = () => {
 
             // Update global auth context with user info and token
             setAuthUser(result.user, result.token);
-            
-            navigate('/');
+
+            navigate(formData.userType === 'farmer' ? '/farmer-dashboard' : '/');
         } catch (err) {
             setError(err.message || 'Signup failed. Please try again.');
         } finally {

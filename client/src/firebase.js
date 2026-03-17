@@ -2,18 +2,17 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+import { getAnalytics } from "firebase/analytics";
 
-// ⚠️ IMPORTANT: Replace these with your actual Firebase config
-// Get your config from: https://console.firebase.google.com
-// Project Settings → Your apps → Web app → Firebase SDK snippet
-
+// Use your actual TripleGain Firebase config here
 const firebaseConfig = {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDEMOKEY123REPLACETHIS",
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "triplegain-demo.firebaseapp.com",
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "triplegain-demo",
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "triplegain-demo.appspot.com",
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "123456789",
-    appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:123456789:web:abc123def456"
+    apiKey: "AIzaSyAka62DwD1FvawfYxHndBML7GSb8ocL1Lk",
+    authDomain: "triplegain-afb8c.firebaseapp.com",
+    projectId: "triplegain-afb8c",
+    storageBucket: "triplegain-afb8c.firebasestorage.app",
+    messagingSenderId: "537179349283",
+    appId: "1:537179349283:web:4458e4e054ac77eaf56c96",
+    measurementId: "G-3VSE8J4E7J"
 };
 
 // Initialize Firebase
@@ -21,23 +20,23 @@ let app;
 let auth;
 let db;
 let storage;
+let analytics;
 
 try {
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
     db = getFirestore(app);
     storage = getStorage(app);
+    analytics = getAnalytics(app);
 } catch (error) {
     console.warn('⚠️ Firebase initialization warning:', error.message);
-    console.log('📝 Please configure your Firebase credentials in src/firebase.js');
 }
 
-// Initialize providers
+// Initialize and configure providers
 const googleProvider = new GoogleAuthProvider();
-
-// Configure providers
 googleProvider.addScope('profile');
 googleProvider.addScope('email');
 
+// Export everything so your components can use them
 export { app, auth, db, storage, googleProvider };
 export default app;
