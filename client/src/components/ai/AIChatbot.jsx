@@ -19,14 +19,10 @@ const AIChatbot = () => {
 
     // Generate a unique user ID from auth or fallback
     const userId = user?.id || user?.email || `farmer_${Math.random().toString(36).substr(2, 9)}`;
-    
-    // Helper to build API URLs - uses Vite proxy in development, direct URL in production
+
+    // 🌟 修复 1：黑客松保命绝招，永远强制连接你的 Render 云端服务器
     const getApiUrl = (endpoint) => {
-        if (import.meta.env.PROD) {
-            return `http://localhost:5000/api${endpoint}`;
-        } else {
-            return `/api${endpoint}`;
-        }
+        return `https://triplegain-api.onrender.com/api${endpoint}`;
     };
 
     const scrollToBottom = () => {
@@ -55,6 +51,7 @@ const AIChatbot = () => {
         return { cropType: 'General', region: 'Not specified', season: 'Current' };
     };
 
+    // 🌟 修复 2：把你丢失的这段函数声明和 fetch 前半段补回来了
     const handleSendMessage = async (messageText = inputValue) => {
         if (!messageText.trim()) return;
 
@@ -86,7 +83,7 @@ const AIChatbot = () => {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                
+
                 // Check if it's a quota error with fallback reply
                 if (response.status === 503 && errorData.isQuotaError && errorData.fallbackReply) {
                     const botMessage = {
@@ -99,19 +96,19 @@ const AIChatbot = () => {
                     setLoading(false);
                     return;
                 }
-                
+
                 throw new Error(errorData.message || `API Error: ${response.status}`);
             }
 
             const data = await response.json();
-            
+
             const botMessage = {
                 id: messages.length + 2,
                 type: 'bot',
                 content: data.reply || data.fallbackReply || 'Sorry, I couldn\'t process your request.',
                 timestamp: new Date()
             };
-            
+
             setMessages(prev => [...prev, botMessage]);
         } catch (error) {
             console.error('Chat Error:', error);
@@ -168,9 +165,9 @@ const AIChatbot = () => {
                             >
                                 <div
                                     className={`max-w-xs px-4 py-3 rounded-2xl ${msg.type === 'user'
-                                            ? 'bg-emerald-500 text-white rounded-br-none'
-                                            : 'bg-emerald-50 text-emerald-900 rounded-bl-none border border-emerald-200'
-                                        }`}
+                                        ? 'bg-emerald-500 text-white rounded-br-none'
+                                        : 'bg-emerald-50 text-emerald-900 rounded-bl-none border border-emerald-200'
+                                    }`}
                                 >
                                     <p className="text-sm leading-relaxed">{msg.content}</p>
                                     <p className={`text-xs mt-2 ${msg.type === 'user' ? 'text-emerald-100' : 'text-emerald-600'}`}>

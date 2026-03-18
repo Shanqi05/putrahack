@@ -1,6 +1,7 @@
+// src/pages/Profile.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Mail, MapPin, Edit2, Save, X, CheckCircle } from 'lucide-react';
+import { User, Mail, MapPin, Edit2, Save, X, CheckCircle, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getUserProfile, updateProfile } from '../services/auth';
 
@@ -80,65 +81,73 @@ const Profile = () => {
     }
 
     return (
-        <div className="min-h-screen pt-24 pb-20 px-6 bg-gradient-to-br from-emerald-50 via-white to-green-50">
+        <div className="min-h-screen pt-28 pb-20 px-6 bg-[#F8FAFC]">
             <div className="max-w-2xl mx-auto">
-                {/* Header Card */}
-                <div className="bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-3xl p-8 md:p-12 shadow-2xl mb-8">
+                <div className="flex items-center gap-4 mb-8">
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="p-2.5 bg-white rounded-full shadow-sm border border-slate-200 hover:bg-slate-50 hover:shadow-md transition-all group"
+                    >
+                        <ArrowLeft size={24} className="text-slate-600 group-hover:text-slate-900 group-hover:-translate-x-0.5 transition-transform" />
+                    </button>
+                    <div>
+                        <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">
+                            User <span className="text-emerald-600">Profile</span>
+                        </h1>
+                    </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-[2.5rem] p-8 md:p-12 shadow-2xl mb-8">
                     <div className="flex items-center gap-8">
-                        {/* Avatar */}
                         <div className="relative">
-                            <div className="w-24 h-24 md:w-32 md:h-32 rounded-2xl border-4 border-white bg-white flex items-center justify-center">
+                            <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl border-4 border-white bg-white flex items-center justify-center shadow-lg">
                                 <User size={48} className="text-emerald-600" />
                             </div>
                         </div>
 
-                        {/* User Info */}
                         <div className="flex-1">
                             <h1 className="text-3xl md:text-4xl font-black mb-2">{userData.fullName}</h1>
-                            <p className="text-green-100 font-semibold capitalize mb-2 inline-block bg-white/20 px-4 py-1 rounded-full">
+                            <p className="text-green-100 font-bold capitalize mb-2 inline-block bg-white/20 px-4 py-1.5 rounded-full text-sm shadow-sm border border-white/10">
                                 {userData.userType === 'farmer' ? '🌱 Farmer' : '🛒 Buyer'}
                             </p>
-                            <p className="text-green-100 flex items-center gap-2">
+                            <p className="text-green-50 flex items-center gap-2 font-medium">
                                 <Mail size={18} /> {userData.email}
                             </p>
                         </div>
 
-                        {/* Edit Button */}
                         {!isEditing && (
                             <button
                                 onClick={() => setIsEditing(true)}
-                                className="bg-white text-emerald-600 p-3 rounded-xl hover:scale-110 transition-transform font-bold flex items-center gap-2"
+                                className="bg-white text-emerald-600 px-6 py-3 rounded-2xl hover:bg-emerald-50 transition-colors font-bold flex items-center gap-2 shadow-lg"
                             >
-                                <Edit2 size={20} /> Edit
+                                <Edit2 size={18} /> Edit
                             </button>
                         )}
                     </div>
                 </div>
 
-                {/* Success Message */}
                 {success && (
-                    <div className="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg mb-6 flex items-center gap-2">
-                        <CheckCircle size={20} />
-                        <p className="font-semibold">{success}</p>
+                    <div className="bg-emerald-50 border-l-4 border-emerald-500 text-emerald-800 p-4 rounded-2xl mb-6 flex items-center gap-2 shadow-sm">
+                        <CheckCircle size={20} className="text-emerald-500" />
+                        <p className="font-bold">{success}</p>
                     </div>
                 )}
 
-                {/* Error Message */}
                 {error && (
-                    <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mb-6">
-                        <p className="font-semibold">{error}</p>
+                    <div className="bg-red-50 border-l-4 border-red-500 text-red-800 p-4 rounded-2xl mb-6 shadow-sm">
+                        <p className="font-bold">{error}</p>
                     </div>
                 )}
 
-                {/* Profile Form */}
-                <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-emerald-100 p-8">
-                    <h2 className="text-2xl font-black text-emerald-900 mb-6">Profile Information</h2>
+                <div className="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 p-8 md:p-10">
+                    <h2 className="text-xl font-black text-slate-800 mb-8 flex items-center gap-2">
+                        Account Information
+                    </h2>
 
-                    <div className="space-y-5">
-                        {/* Full Name */}
+                    <div className="space-y-6">
                         <div>
-                            <label className="block text-emerald-900 font-bold mb-2 flex items-center gap-2">
-                                <User size={18} className="text-emerald-600" />
+                            <label className="text-sm font-bold text-slate-700 block mb-2 flex items-center gap-2">
+                                <User size={16} className="text-slate-400" />
                                 Full Name
                             </label>
                             <input
@@ -147,109 +156,112 @@ const Profile = () => {
                                 value={formData.fullName || ''}
                                 onChange={handleChange}
                                 disabled={!isEditing}
-                                className={`w-full px-4 py-3 rounded-2xl border-2 ${
+                                className={`w-full px-4 py-3.5 rounded-2xl border-2 font-medium ${
                                     isEditing
-                                        ? 'border-emerald-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-300/30 bg-emerald-50/50'
-                                        : 'border-gray-200 bg-gray-50 text-gray-600'
-                                } outline-none transition-all`}
+                                        ? 'border-slate-200 focus:border-emerald-500 bg-white outline-none focus:ring-4 focus:ring-emerald-500/10'
+                                        : 'border-transparent bg-slate-50 text-slate-600 outline-none cursor-not-allowed'
+                                } transition-all`}
                             />
                         </div>
 
-                        {/* Email (Read-only) */}
                         <div>
-                            <label className="block text-emerald-900 font-bold mb-2 flex items-center gap-2">
-                                <Mail size={18} className="text-emerald-600" />
+                            <label className="text-sm font-bold text-slate-700 block mb-2 flex items-center gap-2">
+                                <Mail size={16} className="text-slate-400" />
                                 Email Address
                             </label>
                             <input
                                 type="email"
                                 value={userData.email || ''}
                                 disabled
-                                className="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 bg-gray-50 text-gray-600 outline-none"
+                                className="w-full px-4 py-3.5 rounded-2xl border-2 border-transparent bg-slate-50 text-slate-600 font-medium outline-none cursor-not-allowed"
                             />
                         </div>
 
-                        {/* User Type */}
-                        <div>
-                            <label className="block text-emerald-900 font-bold mb-2">User Type</label>
-                            <select
-                                name="userType"
-                                value={formData.userType || 'farmer'}
-                                onChange={handleChange}
-                                disabled={!isEditing}
-                                className={`w-full px-4 py-3 rounded-2xl border-2 ${
-                                    isEditing
-                                        ? 'border-emerald-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-300/30 bg-emerald-50/50'
-                                        : 'border-gray-200 bg-gray-50 text-gray-600'
-                                } outline-none transition-all`}
-                            >
-                                <option value="farmer">🌱 Farmer</option>
-                                <option value="buyer">🛒 Buyer</option>
-                            </select>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="text-sm font-bold text-slate-700 block mb-2 flex items-center gap-2">
+                                    <User size={16} className="text-slate-400" />
+                                    Account Role
+                                </label>
+                                <select
+                                    name="userType"
+                                    value={formData.userType || 'farmer'}
+                                    onChange={handleChange}
+                                    disabled={!isEditing}
+                                    className={`w-full px-4 py-3.5 rounded-2xl border-2 font-medium ${
+                                        isEditing
+                                            ? 'border-slate-200 focus:border-emerald-500 bg-white outline-none focus:ring-4 focus:ring-emerald-500/10'
+                                            : 'border-transparent bg-slate-50 text-slate-600 outline-none cursor-not-allowed appearance-none'
+                                    } transition-all`}
+                                >
+                                    <option value="farmer">Farmer</option>
+                                    <option value="buyer">Buyer</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="text-sm font-bold text-slate-700 block mb-2 flex items-center gap-2">
+                                    <MapPin size={16} className="text-slate-400" />
+                                    Region
+                                </label>
+                                <select
+                                    name="region"
+                                    value={formData.region || ''}
+                                    onChange={handleChange}
+                                    disabled={!isEditing}
+                                    className={`w-full px-4 py-3.5 rounded-2xl border-2 font-medium ${
+                                        isEditing
+                                            ? 'border-slate-200 focus:border-emerald-500 bg-white outline-none focus:ring-4 focus:ring-emerald-500/10'
+                                            : 'border-transparent bg-slate-50 text-slate-600 outline-none cursor-not-allowed appearance-none'
+                                    } transition-all`}
+                                >
+                                    <option value="">Select region</option>
+                                    <option value="Kuala Lumpur">Kuala Lumpur</option>
+                                    <option value="Selangor">Selangor</option>
+                                    <option value="Penang">Penang</option>
+                                    <option value="Johor">Johor</option>
+                                    <option value="Perak">Perak</option>
+                                    <option value="Pahang">Pahang</option>
+                                    <option value="Terengganu">Terengganu</option>
+                                    <option value="Kelantan">Kelantan</option>
+                                </select>
+                            </div>
                         </div>
 
-                        {/* Crop Type */}
                         <div>
-                            <label className="block text-emerald-900 font-bold mb-2">Crop Type</label>
+                            <label className="text-sm font-bold text-slate-700 block mb-2 flex items-center gap-2">
+                                <Leaf size={16} className="text-slate-400" />
+                                Primary Crop
+                            </label>
                             <input
                                 type="text"
                                 name="cropType"
                                 value={formData.cropType || ''}
                                 onChange={handleChange}
-                                placeholder="e.g., Rice, Wheat, Vegetables"
+                                placeholder="e.g., Tomatoes, Cabbage"
                                 disabled={!isEditing}
-                                className={`w-full px-4 py-3 rounded-2xl border-2 ${
+                                className={`w-full px-4 py-3.5 rounded-2xl border-2 font-medium ${
                                     isEditing
-                                        ? 'border-emerald-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-300/30 bg-emerald-50/50'
-                                        : 'border-gray-200 bg-gray-50 text-gray-600'
-                                } outline-none transition-all`}
+                                        ? 'border-slate-200 focus:border-emerald-500 bg-white outline-none focus:ring-4 focus:ring-emerald-500/10'
+                                        : 'border-transparent bg-slate-50 text-slate-600 outline-none cursor-not-allowed'
+                                } transition-all`}
                             />
-                        </div>
-
-                        {/* Region */}
-                        <div>
-                            <label className="block text-emerald-900 font-bold mb-2 flex items-center gap-2">
-                                <MapPin size={18} className="text-emerald-600" />
-                                Region
-                            </label>
-                            <select
-                                name="region"
-                                value={formData.region || ''}
-                                onChange={handleChange}
-                                disabled={!isEditing}
-                                className={`w-full px-4 py-3 rounded-2xl border-2 ${
-                                    isEditing
-                                        ? 'border-emerald-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-300/30 bg-emerald-50/50'
-                                        : 'border-gray-200 bg-gray-50 text-gray-600'
-                                } outline-none transition-all`}
-                            >
-                                <option value="">Select your region</option>
-                                <option value="Kuala Lumpur">Kuala Lumpur</option>
-                                <option value="Selangor">Selangor</option>
-                                <option value="Penang">Penang</option>
-                                <option value="Johor">Johor</option>
-                                <option value="Perak">Perak</option>
-                                <option value="Pahang">Pahang</option>
-                                <option value="Terengganu">Terengganu</option>
-                                <option value="Kelantan">Kelantan</option>
-                            </select>
                         </div>
                     </div>
 
-                    {/* Action Buttons */}
                     {isEditing && (
-                        <div className="flex gap-3 mt-8">
-                            <button
-                                onClick={handleSave}
-                                className="flex-1 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold py-3 rounded-2xl hover:shadow-lg transition-all flex items-center justify-center gap-2"
-                            >
-                                <Save size={20} /> Save Changes
-                            </button>
+                        <div className="flex gap-4 mt-10 pt-6 border-t border-slate-100">
                             <button
                                 onClick={handleCancel}
-                                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 rounded-2xl transition-all flex items-center justify-center gap-2"
+                                className="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-4 rounded-2xl transition-all"
                             >
-                                <X size={20} /> Cancel
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSave}
+                                className="flex-1 bg-slate-900 text-white hover:bg-emerald-600 font-bold py-4 rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2"
+                            >
+                                <Save size={18} /> Save Changes
                             </button>
                         </div>
                     )}
@@ -258,5 +270,9 @@ const Profile = () => {
         </div>
     );
 };
+
+const Leaf = ({ size, className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
+);
 
 export default Profile;

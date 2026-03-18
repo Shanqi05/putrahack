@@ -13,6 +13,7 @@ import Signup from './pages/Signup';
 import Profile from './pages/Profile';
 import FarmerDashboard from './pages/FarmerDashboard';
 import { NotificationProvider } from './context/NotificationContext.js';
+import Inbox from "./pages/Inbox";
 
 function App() {
     return (
@@ -31,6 +32,7 @@ function App() {
                             <Route path="/signup" element={<Signup />} />
                             <Route path="/farmer-dashboard" element={<FarmerDashboard />} />
                             <Route path="/farmer-dashboard" element={<FarmerDashboard />} />
+                            <Route path="/inbox" element={<Inbox />} />
                         </Routes>
                         <AIChatbot />
                     </div>
