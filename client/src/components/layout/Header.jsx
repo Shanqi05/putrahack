@@ -1,4 +1,3 @@
-// src/components/Header.jsx
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -53,8 +52,9 @@ const NavItem = ({ title, items, path }) => {
 
 const Header = () => {
     const { isLoggedIn, logout, loading, user } = useAuth();
-    const { notifications, unreadCount, markAllAsRead } = useNotification();
+    const { notifications, unreadCount, markAllAsRead, addNotification } = useNotification();
     const navigate = useNavigate();
+    const [unreadMsgCount, setUnreadMsgCount] = useState(0);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const [showNotifMenu, setShowNotifMenu] = useState(false);
 
@@ -64,7 +64,6 @@ const Header = () => {
         setShowLogoutConfirm(false);
     };
 
-    const [unreadMsgCount, setUnreadMsgCount] = useState(0);
 
     useEffect(() => {
         if (!user) return;
@@ -77,7 +76,19 @@ const Header = () => {
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
+            const count = snapshot.docs.length;
             setUnreadMsgCount(snapshot.docs.length);
+
+        const hasNotifiedThisSession = sessionStorage.getItem(`notified_unread_${activeUserId}`);
+            if (count > 0 && !hasNotifiedThisSession) {
+                addNotification(
+                    "New Messages ✉️",
+                    `You have ${count} unread message${count > 1 ? 's' : ''} waiting in your inbox.`,
+                    "info",
+                    false
+                );
+                sessionStorage.setItem(`notified_unread_${activeUserId}`, 'true');
+            }
         });
 
         return () => unsubscribe();
