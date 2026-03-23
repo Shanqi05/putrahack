@@ -31,6 +31,7 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 Create a new Render Web Service for this folder.
 
 - Root Directory: `inference-service`
+- Python Version: `3.12.8` via `runtime.txt`
 - Build Command: `pip install -r requirements.txt`
 - Start Command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
 - Health Check Path: `/health`
