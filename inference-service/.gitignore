@@ -2,4 +2,9 @@
 .env.local
 __pycache__/
 *.pyc
-models/
+uvicorn.log
+uvicorn.err.log
+models/*
+!models/.gitkeep
+!models/labels.json
+!models/plant_disease_model.pt
