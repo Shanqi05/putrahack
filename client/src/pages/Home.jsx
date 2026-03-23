@@ -326,7 +326,7 @@ const images = [
                 setWeatherData(data);
             } catch (error) {
                 console.error('Failed to load weather:', error);
-                setWeatherError('Unable to fetch weather data. Make sure backend is running on http://localhost:5000');
+                setWeatherError('Unable to fetch weather data. Check the backend API configuration.');
             }
             setLoading(false);
         };

@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import { useNotification } from "../context/NotificationContext.js";
 import FarmTaskManager from "../components/dashboard/FarmTaskManager";
 import InventoryManager from "../components/dashboard/InventoryManager";
+import { getApiUrl } from "../config/api";
 
 const REGION_COORDS = {
     "Kuala Lumpur": { lat: 3.139, lon: 101.6869 },
@@ -80,7 +81,7 @@ const FarmerDashboard = () => {
                 - "demand" (string, strictly "High" or "Low"). 
                 Do not include markdown formatting or backticks.`;
 
-                const response = await fetch('https://triplegain-api.onrender.com/api/chatbot/ask', {
+                const response = await fetch(getApiUrl('/chatbot/ask'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ message: aiPrompt })

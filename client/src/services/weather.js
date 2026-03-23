@@ -1,8 +1,5 @@
 // Weather Alert API service - TripleGain Backend
-// Helper to build API URLs - uses Vite proxy in development, direct URL in production
-const getApiUrl = (endpoint) => {
-    return `https://triplegain-api.onrender.com/api${endpoint}`;
-};
+import { getApiUrl } from "../config/api";
 
 export const getWeatherAlert = async (latitude, longitude, cropType = "") => {
     try {

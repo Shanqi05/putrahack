@@ -1,11 +1,7 @@
 // Authentication Service - TripleGain Backend
 import { signInWithPopup, signOut as firebaseSignOut } from "firebase/auth";
 import { auth, googleProvider } from "../firebase";
-
-// Helper to build API URLs - uses Vite proxy in development, direct URL in production
-const getApiUrl = (endpoint) => {
-    return `https://triplegain-api.onrender.com/api${endpoint}`;
-};
+import { getApiUrl } from "../config/api";
 
 // Store token in localStorage
 const setToken = (token) => {
