@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Loader, Smile, Paperclip } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { getApiUrl } from '../../config/api';
 
 const AIChatbot = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -19,11 +20,6 @@ const AIChatbot = () => {
 
     // Generate a unique user ID from auth or fallback
     const userId = user?.id || user?.email || `farmer_${Math.random().toString(36).substr(2, 9)}`;
-
-    // 🌟 修复 1：黑客松保命绝招，永远强制连接你的 Render 云端服务器
-    const getApiUrl = (endpoint) => {
-        return `https://triplegain-api.onrender.com/api${endpoint}`;
-    };
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -115,7 +111,7 @@ const AIChatbot = () => {
             const errorMessage = {
                 id: messages.length + 2,
                 type: 'bot',
-                content: '⚠️ Connection issue. Please check:\n1. Backend is running on port 5000\n2. Google AI API key is set in server/.env\n\nError: ' + error.message,
+                content: '⚠️ Connection issue. Please check:\n1. Backend API URL is correct\n2. Google AI API key is set in server/.env\n\nError: ' + error.message,
                 timestamp: new Date()
             };
             setMessages(prev => [...prev, errorMessage]);

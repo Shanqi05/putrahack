@@ -1,3 +1,5 @@
+import { getApiUrl } from '../config/api';
+
 // Fetch 5-year historical average data
 const fetchHistoricalAverage = async (lat, lon) => {
     try {
@@ -32,11 +34,6 @@ const fetchCurrentForecast = async (lat, lon) => {
     } catch (e) {
         return { avgTemp: "34.0", totalRain: "220" };
     }
-};
-
-// Helper for API URL (same as chatbot)
-const getApiUrl = (endpoint) => {
-    return `https://triplegain-api.onrender.com/api${endpoint}`;
 };
 
 // Main AI analysis function

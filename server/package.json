@@ -6,7 +6,8 @@
     "type": "module",
     "scripts": {
         "start": "node index.js",
-        "dev": "nodemon index.js"
+        "dev": "nodemon index.js",
+        "upload:disease-dataset": "node scripts/upload-disease-dataset.js"
     },
     "keywords": [],
     "author": "",

@@ -1,0 +1,10 @@
+.env
+.env.local
+__pycache__/
+*.pyc
+uvicorn.log
+uvicorn.err.log
+models/*
+!models/.gitkeep
+!models/labels.json
+!models/plant_disease_model.pt

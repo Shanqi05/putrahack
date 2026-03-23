@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { CloudRain, Wind, Droplets, BarChart3, CheckCircle, AlertOctagon, Stethoscope, TrendingUp, TrendingDown, Loader } from "lucide-react";
+import { Link } from "react-router-dom";
+import { CloudRain, Wind, Droplets, BarChart3, CheckCircle, AlertOctagon, Stethoscope, TrendingUp, TrendingDown, Loader, AlertCircle } from "lucide-react";
 import { getWeatherAlert, parseWeatherAlert } from "../services/weather";
 import { analyzeClimateAnomaly } from "../services/aiClimate";
 import { useAuth } from "../context/AuthContext";
 import { useNotification } from "../context/NotificationContext.js";
 import FarmTaskManager from "../components/dashboard/FarmTaskManager";
 import InventoryManager from "../components/dashboard/InventoryManager";
+import { getApiUrl } from "../config/api";
+import { subscribeToDiseaseScans } from "../services/diseaseHistory";
+import { formatRelativeScanTime, getActiveUserId } from "../utils/diseaseScanUi";
 
 const REGION_COORDS = {
     "Kuala Lumpur": { lat: 3.139, lon: 101.6869 },
@@ -30,8 +34,11 @@ const FarmerDashboard = () => {
 
     const [marketDemand, setMarketDemand] = useState([]);
     const [loadingDemand, setLoadingDemand] = useState(true);
+    const [recentScans, setRecentScans] = useState([]);
+    const [loadingScans, setLoadingScans] = useState(true);
 
     const userRegion = user?.region || "Penang";
+    const activeUserId = getActiveUserId(user);
 
     useEffect(() => {
         const fetchWeatherAndAnalyze = async () => {
@@ -80,7 +87,7 @@ const FarmerDashboard = () => {
                 - "demand" (string, strictly "High" or "Low"). 
                 Do not include markdown formatting or backticks.`;
 
-                const response = await fetch('https://triplegain-api.onrender.com/api/chatbot/ask', {
+                const response = await fetch(getApiUrl('/chatbot/ask'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ message: aiPrompt })
@@ -117,6 +124,31 @@ const FarmerDashboard = () => {
         fetchMarketDemand(); // 触发市场分析
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userRegion]);
+
+    useEffect(() => {
+        if (!activeUserId) {
+            setRecentScans([]);
+            setLoadingScans(false);
+            return;
+        }
+
+        setLoadingScans(true);
+
+        const unsubscribe = subscribeToDiseaseScans(
+            activeUserId,
+            (scans) => {
+                setRecentScans(scans.slice(0, 3));
+                setLoadingScans(false);
+            },
+            (error) => {
+                console.error("Fetch recent disease scans error:", error);
+                setRecentScans([]);
+                setLoadingScans(false);
+            },
+        );
+
+        return () => unsubscribe();
+    }, [activeUserId]);
 
     return (
         <div className="min-h-screen bg-emerald-50/30 pt-28 pb-10 px-6 md:px-8 font-sans">
@@ -175,16 +207,17 @@ const FarmerDashboard = () => {
                                 </div>
                                 <div className="mt-6 z-10">
                                     <div className="flex items-end gap-3">
-                                        <span className="text-6xl font-black tracking-tighter">{weatherData?.currentTemp || 32}°C</span>
+                                        <span className="text-6xl font-black tracking-tighter">{weatherData?.currentTemp ?? 32}</span>
+                                        <span className="text-5xl mb-1.5 font-black text-emerald-100">&deg;C</span>
                                         <span className="text-xl mb-1.5 font-bold text-emerald-100">{weatherData?.condition || "Sunny"}</span>
                                     </div>
                                     <div className="flex space-x-4 mt-4 text-sm font-bold text-white bg-black/10 w-fit px-5 py-2.5 rounded-2xl backdrop-blur-md border border-white/10">
                                         <span className="flex items-center">
-                                            <Droplets size={16} className="mr-1.5 text-blue-200" /> {weatherData?.humidity || 75}% Humidity
+                                            <Droplets size={16} className="mr-1.5 text-blue-200" /> {weatherData?.humidity ?? 75}% Humidity
                                         </span>
                                         <div className="w-px h-4 bg-white/20"></div>
                                         <span className="flex items-center">
-                                            <Wind size={16} className="mr-1.5 text-gray-200" /> {weatherData?.windSpeed || 12} km/h Wind
+                                            <Wind size={16} className="mr-1.5 text-gray-200" /> {weatherData?.windSpeed ?? 12} km/h Wind
                                         </span>
                                     </div>
                                 </div>
@@ -201,11 +234,59 @@ const FarmerDashboard = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Recent AI Scans */}
                     <div className="bg-white rounded-3xl p-6 shadow-xl shadow-emerald-900/5 border border-emerald-50 h-full">
-                        <div className="flex items-center gap-2 mb-4 text-emerald-950">
-                            <Stethoscope size={20} className="text-emerald-500" />
-                            <h3 className="font-black text-lg">Recent AI Scans</h3>
+                        <div className="flex items-center justify-between gap-3 mb-4 text-emerald-950">
+                            <div className="flex items-center gap-2">
+                                <Stethoscope size={20} className="text-emerald-500" />
+                                <h3 className="font-black text-lg">Recent AI Scans</h3>
+                            </div>
+                            <Link
+                                to="/disease-history"
+                                className="text-xs font-black text-emerald-600 hover:text-emerald-700 transition-colors"
+                            >
+                                View all
+                            </Link>
                         </div>
-                        <div className="space-y-4">
+                        {loadingScans ? (
+                            <div className="flex h-[180px] flex-col items-center justify-center gap-3 text-slate-400">
+                                <Loader className="animate-spin text-emerald-500" size={24} />
+                                <p className="text-sm font-semibold">Loading recent scan activity...</p>
+                            </div>
+                        ) : recentScans.length === 0 ? (
+                            <div className="flex h-[180px] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-emerald-100 bg-emerald-50/50 p-6 text-center">
+                                <Stethoscope size={28} className="text-emerald-400" />
+                                <p className="text-sm font-bold text-emerald-900">No AI scans yet</p>
+                                <p className="text-xs font-medium text-emerald-700/70">
+                                    Your saved disease scans will appear here after the first analysis.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {recentScans.map((scan) => (
+                                    <div key={scan.id} className="flex items-start gap-3 rounded-2xl bg-slate-50 p-4">
+                                        <div className={`p-2 rounded-lg ${scan.isHealthy ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}>
+                                            {scan.isHealthy ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="font-bold text-sm text-emerald-950 truncate">
+                                                {scan.crop || "Crop Scan"}
+                                            </p>
+                                            <p className="text-xs text-emerald-700/80 font-medium truncate">
+                                                {scan.condition || scan.predictedLabel}
+                                            </p>
+                                            <p className="text-xs text-slate-500 font-medium mt-1">
+                                                {typeof scan.confidence === "number"
+                                                    ? `${(scan.confidence * 100).toFixed(0)}% confidence`
+                                                    : "Prediction saved"}
+                                            </p>
+                                        </div>
+                                        <span className="text-xs font-bold text-gray-400 ml-auto whitespace-nowrap">
+                                            {formatRelativeScanTime(scan.scannedAt)}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {false && <div className="space-y-4">
                             <div className="flex items-start gap-3">
                                 <div className="p-2 bg-green-100 rounded-lg text-green-600">
                                     <CheckCircle size={16} />
@@ -216,7 +297,7 @@ const FarmerDashboard = () => {
                                 </div>
                                 <span className="text-xs font-bold text-gray-400 ml-auto">2h ago</span>
                             </div>
-                        </div>
+                        </div>}
                     </div>
 
                     {/* 🌟 动态生成的 Market Demand Highlights */}
