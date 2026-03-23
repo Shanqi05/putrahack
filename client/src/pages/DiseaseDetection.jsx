@@ -1,25 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Microscope, Upload, CheckCircle, AlertCircle, Leaf, ArrowRight, Loader2, Clock3, Activity, ShieldCheck } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Microscope, Upload, CheckCircle, AlertCircle, Leaf, ArrowRight, Loader2, Clock3, Activity, ShieldCheck, ChevronDown } from 'lucide-react';
 import { predictDisease } from '../services/diseaseDetection';
 import { saveDiseaseScan, subscribeToDiseaseScans } from '../services/diseaseHistory';
+import { getTreatmentGuide } from '../services/diseaseTreatmentGuide';
 import { useAuth } from '../context/AuthContext';
+import { formatScanDate, getActiveUserId, getUrgencyStyles } from '../utils/diseaseScanUi';
 
 const ACCEPTED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.bmp'];
-const HISTORY_PREVIEW_LIMIT = 6;
-
-const getActiveUserId = (user) => user?.uid || user?.id || user?._id || user?.email || '';
-
-const formatScanDate = (value) => {
-    if (!value) return 'Just now';
-
-    const parsedDate = new Date(value);
-    if (Number.isNaN(parsedDate.getTime())) return 'Just now';
-
-    return new Intl.DateTimeFormat('en-MY', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-    }).format(parsedDate);
-};
 
 const getMostFrequentCondition = (history) => {
     const counts = history.reduce((accumulator, scan) => {
@@ -43,6 +31,7 @@ const DiseaseDetection = () => {
     const [prediction, setPrediction] = useState(null);
     const [analysisError, setAnalysisError] = useState('');
     const [uploadError, setUploadError] = useState('');
+    const [showTreatmentGuideDetails, setShowTreatmentGuideDetails] = useState(false);
     const [scanHistory, setScanHistory] = useState([]);
     const [historyLoading, setHistoryLoading] = useState(true);
     const [historyError, setHistoryError] = useState('');
@@ -95,12 +84,14 @@ const DiseaseDetection = () => {
             setUploadedFile(null);
             setUploadedImage(null);
             setPrediction(null);
+            setShowTreatmentGuideDetails(false);
             setUploadError('Please upload an image file in .jpg, .jpeg, .png, .webp, or .bmp format.');
             return;
         }
 
         setUploadedFile(file);
         setPrediction(null);
+        setShowTreatmentGuideDetails(false);
         setAnalysisError('');
         setUploadError('');
 
@@ -156,6 +147,7 @@ const DiseaseDetection = () => {
         try {
             const result = await predictDisease(uploadedFile, 3);
             setPrediction(result);
+            setShowTreatmentGuideDetails(false);
 
             if (activeUserId) {
                 try {
@@ -191,6 +183,7 @@ const DiseaseDetection = () => {
     const diseaseAlerts = totalScans - healthyScans;
     const latestScan = scanHistory[0] || null;
     const mostFrequentCondition = getMostFrequentCondition(scanHistory);
+    const treatmentGuide = prediction ? getTreatmentGuide(prediction) : null;
 
     return (
         <div className="pt-24 px-6 pb-20 bg-gradient-to-b from-slate-50 to-orange-50 min-h-screen">
@@ -215,8 +208,7 @@ const DiseaseDetection = () => {
                 <div ref={uploadSectionRef} className="mb-20">
                     <h2 className="text-4xl font-black text-slate-900 mb-12 text-center">Start Scanning Your Crops</h2>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-                        {/* Upload Box */}
+                    <div className="mx-auto max-w-4xl">
                         <div
                             className={`bg-white rounded-3xl p-12 shadow-xl border-2 border-dashed transition-all ${
                                 isDragging
@@ -311,242 +303,252 @@ const DiseaseDetection = () => {
                                     )}
 
                                     {prediction && (
-                                        <div className="mt-6 rounded-3xl bg-slate-900 text-white p-6 shadow-xl">
-                                            <div className="flex items-start justify-between gap-4">
-                                                <div>
-                                                    <p className="text-xs uppercase tracking-[0.25em] text-orange-200 font-bold">Model Prediction</p>
-                                                    <h4 className="mt-2 text-2xl font-black">{prediction.condition}</h4>
-                                                    <p className="mt-1 text-sm text-slate-300">{prediction.crop}</p>
+                                        <>
+                                            <div className="mt-6 rounded-3xl bg-slate-900 text-white p-6 shadow-xl">
+                                                <div className="flex items-start justify-between gap-4">
+                                                    <div>
+                                                        <p className="text-xs uppercase tracking-[0.25em] text-orange-200 font-bold">Model Prediction</p>
+                                                        <h4 className="mt-2 text-2xl font-black">{prediction.condition}</h4>
+                                                        <p className="mt-1 text-sm text-slate-300">{prediction.crop}</p>
+                                                    </div>
+                                                    <div className={`px-3 py-2 rounded-2xl text-xs font-black uppercase tracking-wide ${prediction.isHealthy ? 'bg-emerald-400 text-emerald-950' : 'bg-red-400 text-red-950'}`}>
+                                                        {prediction.isHealthy ? 'Healthy' : 'Disease Found'}
+                                                    </div>
                                                 </div>
-                                                <div className={`px-3 py-2 rounded-2xl text-xs font-black uppercase tracking-wide ${prediction.isHealthy ? 'bg-emerald-400 text-emerald-950' : 'bg-red-400 text-red-950'}`}>
-                                                    {prediction.isHealthy ? 'Healthy' : 'Disease Found'}
-                                                </div>
-                                            </div>
 
-                                            <div className="mt-6 grid grid-cols-2 gap-4">
-                                                <div className="rounded-2xl bg-white/10 p-4">
-                                                    <p className="text-xs font-bold uppercase tracking-wide text-slate-300">Confidence</p>
-                                                    <p className="mt-2 text-3xl font-black">{(prediction.confidence * 100).toFixed(1)}%</p>
+                                                <div className="mt-6 grid grid-cols-2 gap-4">
+                                                    <div className="rounded-2xl bg-white/10 p-4">
+                                                        <p className="text-xs font-bold uppercase tracking-wide text-slate-300">Confidence</p>
+                                                        <p className="mt-2 text-3xl font-black">{(prediction.confidence * 100).toFixed(1)}%</p>
+                                                    </div>
+                                                    <div className="rounded-2xl bg-white/10 p-4">
+                                                        <p className="text-xs font-bold uppercase tracking-wide text-slate-300">Predicted Label</p>
+                                                        <p className="mt-2 text-sm font-bold leading-relaxed text-slate-100">{prediction.predictedLabel}</p>
+                                                    </div>
                                                 </div>
-                                                <div className="rounded-2xl bg-white/10 p-4">
-                                                    <p className="text-xs font-bold uppercase tracking-wide text-slate-300">Predicted Label</p>
-                                                    <p className="mt-2 text-sm font-bold leading-relaxed text-slate-100">{prediction.predictedLabel}</p>
-                                                </div>
-                                            </div>
 
-                                            <div className="mt-6">
-                                                <p className="text-xs uppercase tracking-[0.25em] text-slate-400 font-bold">Top Matches</p>
-                                                <div className="mt-3 space-y-3">
-                                                    {prediction.topPredictions.map((item) => (
-                                                        <div key={item.label} className="flex items-center justify-between rounded-2xl bg-white/5 px-4 py-3">
-                                                            <div>
-                                                                <p className="font-bold text-sm text-white">{item.condition}</p>
-                                                                <p className="text-xs text-slate-400">{item.crop}</p>
+                                                <div className="mt-6">
+                                                    <p className="text-xs uppercase tracking-[0.25em] text-slate-400 font-bold">Top Matches</p>
+                                                    <div className="mt-3 space-y-3">
+                                                        {prediction.topPredictions.map((item) => (
+                                                            <div key={item.label} className="flex items-center justify-between rounded-2xl bg-white/5 px-4 py-3">
+                                                                <div>
+                                                                    <p className="font-bold text-sm text-white">{item.condition}</p>
+                                                                    <p className="text-xs text-slate-400">{item.crop}</p>
+                                                                </div>
+                                                                <p className="text-sm font-black text-orange-200">{(item.confidence * 100).toFixed(1)}%</p>
                                                             </div>
-                                                            <p className="text-sm font-black text-orange-200">{(item.confidence * 100).toFixed(1)}%</p>
-                                                        </div>
-                                                    ))}
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
+
+                                            {treatmentGuide && (
+                                                <div className="mt-6 rounded-3xl border border-orange-100 bg-white p-6 shadow-xl">
+                                                    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                                                        <div>
+                                                            <p className="text-xs font-black uppercase tracking-[0.24em] text-orange-500">Treatment Guide</p>
+                                                            <h4 className="mt-2 text-xl font-black text-slate-900">{treatmentGuide.title}</h4>
+                                                            <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                                                                {treatmentGuide.summary}
+                                                            </p>
+                                                        </div>
+
+                                                        <div className="flex flex-wrap items-center gap-3">
+                                                            <div className={`inline-flex items-center rounded-2xl border px-4 py-2 text-xs font-black uppercase tracking-wide ${getUrgencyStyles(treatmentGuide.urgency)}`}>
+                                                                {treatmentGuide.urgency} Priority
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setShowTreatmentGuideDetails((value) => !value)}
+                                                                className="inline-flex items-center gap-2 rounded-2xl border border-orange-200 bg-orange-50 px-4 py-2 text-xs font-black uppercase tracking-wide text-orange-700 transition hover:bg-orange-100"
+                                                            >
+                                                                {showTreatmentGuideDetails ? 'Hide Details' : 'Show Details'}
+                                                                <ChevronDown size={16} className={`transition-transform ${showTreatmentGuideDetails ? 'rotate-180' : ''}`} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    {showTreatmentGuideDetails && (
+                                                        <>
+                                                            <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+                                                                <div className="rounded-2xl border border-orange-100 bg-orange-50 p-5">
+                                                                    <div className="flex items-center gap-2 text-orange-700">
+                                                                        <AlertCircle size={18} />
+                                                                        <p className="text-sm font-black uppercase tracking-[0.18em]">Immediate Actions</p>
+                                                                    </div>
+                                                                    <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-slate-700">
+                                                                        {treatmentGuide.immediateActions.map((step) => (
+                                                                            <li key={step}>{step}</li>
+                                                                        ))}
+                                                                    </ul>
+                                                                </div>
+
+                                                                <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5">
+                                                                    <div className="flex items-center gap-2 text-emerald-700">
+                                                                        <CheckCircle size={18} />
+                                                                        <p className="text-sm font-black uppercase tracking-[0.18em]">Prevention Tips</p>
+                                                                    </div>
+                                                                    <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-slate-700">
+                                                                        {treatmentGuide.preventionTips.map((tip) => (
+                                                                            <li key={tip}>{tip}</li>
+                                                                        ))}
+                                                                    </ul>
+                                                                </div>
+
+                                                                <div className="rounded-2xl border border-sky-100 bg-sky-50 p-5">
+                                                                    <div className="flex items-center gap-2 text-sky-700">
+                                                                        <Leaf size={18} />
+                                                                        <p className="text-sm font-black uppercase tracking-[0.18em]">Monitor Next</p>
+                                                                    </div>
+                                                                    <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-slate-700">
+                                                                        {treatmentGuide.monitorNext.map((check) => (
+                                                                            <li key={check}>{check}</li>
+                                                                        ))}
+                                                                    </ul>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="mt-5 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                                                                {treatmentGuide.disclaimer}
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             )}
                         </div>
-
-                        {/* Features List */}
-                        <div className="space-y-6">
-                            <div className="flex items-start space-x-4">
-                                <div className="bg-orange-100 p-4 rounded-xl flex-shrink-0">
-                                    <Microscope size={24} className="text-orange-600" />
-                                </div>
-                                <div>
-                                    <h3 className="font-black text-lg text-slate-900">AI-Powered Analysis</h3>
-                                    <p className="text-slate-600 text-sm">Deep learning models trained on 1M+ crop images</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-start space-x-4">
-                                <div className="bg-green-100 p-4 rounded-xl flex-shrink-0">
-                                    <CheckCircle size={24} className="text-green-600" />
-                                </div>
-                                <div>
-                                    <h3 className="font-black text-lg text-slate-900">Instant Results</h3>
-                                    <p className="text-slate-600 text-sm">Get accurate diagnosis in seconds with confidence scores</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-start space-x-4">
-                                <div className="bg-yellow-100 p-4 rounded-xl flex-shrink-0">
-                                    <AlertCircle size={24} className="text-yellow-600" />
-                                </div>
-                                <div>
-                                    <h3 className="font-black text-lg text-slate-900">Treatment Guide</h3>
-                                    <p className="text-slate-600 text-sm">Get actionable recommendations and preventive measures</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-start space-x-4">
-                                <div className="bg-blue-100 p-4 rounded-xl flex-shrink-0">
-                                    <Leaf size={24} className="text-blue-600" />
-                                </div>
-                                <div>
-                                    <h3 className="font-black text-lg text-slate-900">Historical Tracking</h3>
-                                    <p className="text-slate-600 text-sm">Every successful scan is saved automatically to your farming history</p>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
-                <div className="mb-20">
-                    <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-10">
-                        <div>
+                <div className="mb-20 rounded-[3rem] border border-orange-100 bg-white p-8 shadow-xl">
+                    <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="max-w-2xl">
                             <p className="text-sm font-black uppercase tracking-[0.24em] text-orange-500">Historical Tracking</p>
-                            <h2 className="mt-2 text-4xl font-black text-slate-900">Your Recent Crop Scan History</h2>
-                            <p className="mt-3 max-w-3xl text-slate-600">
-                                Each successful prediction is saved to your account so you can monitor recurring issues, compare outcomes, and spot disease trends faster.
+                            <h2 className="mt-2 text-4xl font-black text-slate-900">Keep The Detection Page Clean</h2>
+                            <p className="mt-3 text-slate-600">
+                                Your scan history now lives on a dedicated page, so this screen stays focused on uploading, analyzing, and reviewing the latest treatment guide.
                             </p>
                         </div>
 
-                        <div className="rounded-3xl bg-white px-6 py-4 shadow-lg border border-orange-100">
-                            <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Latest Activity</p>
-                            <p className="mt-2 text-lg font-black text-slate-900">
-                                {latestScan ? latestScan.condition : 'No scans saved yet'}
-                            </p>
-                            <p className="mt-1 text-sm text-slate-500">
-                                {latestScan ? formatScanDate(latestScan.scannedAt) : 'Analyze your first crop image to start tracking.'}
-                            </p>
-                        </div>
+                        <Link
+                            to="/disease-history"
+                            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-6 py-3 text-sm font-black text-white transition hover:bg-slate-800"
+                        >
+                            Open Full History
+                            <ArrowRight size={18} />
+                        </Link>
                     </div>
 
                     {historyError && (
-                        <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
                             {historyError}
                         </div>
                     )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                        <div className="rounded-3xl bg-white p-6 shadow-lg border border-orange-100">
+                    <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
+                        <div className="rounded-3xl border border-orange-100 bg-orange-50 p-6">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Total Scans</p>
                                     <p className="mt-3 text-4xl font-black text-slate-900">{totalScans}</p>
                                 </div>
-                                <div className="rounded-2xl bg-orange-100 p-4">
-                                    <Clock3 size={24} className="text-orange-600" />
+                                <div className="rounded-2xl bg-white p-4 shadow-sm">
+                                    <Clock3 size={22} className="text-orange-600" />
                                 </div>
                             </div>
-                            <p className="mt-4 text-sm text-slate-500">Every successful scan is added here automatically.</p>
+                            <p className="mt-4 text-sm text-slate-600">
+                                {historyLoading ? 'Updating your saved scan count...' : 'Every successful scan is saved automatically.'}
+                            </p>
                         </div>
 
-                        <div className="rounded-3xl bg-white p-6 shadow-lg border border-rose-100">
+                        <div className="rounded-3xl border border-rose-100 bg-rose-50 p-6">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Disease Alerts</p>
                                     <p className="mt-3 text-4xl font-black text-slate-900">{diseaseAlerts}</p>
                                 </div>
-                                <div className="rounded-2xl bg-rose-100 p-4">
-                                    <Activity size={24} className="text-rose-600" />
+                                <div className="rounded-2xl bg-white p-4 shadow-sm">
+                                    <Activity size={22} className="text-rose-600" />
                                 </div>
                             </div>
-                            <p className="mt-4 text-sm text-slate-500">Scans marked unhealthy so you can follow up quickly.</p>
-                        </div>
-
-                        <div className="rounded-3xl bg-white p-6 shadow-lg border border-emerald-100">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Most Frequent Result</p>
-                                    <p className="mt-3 text-2xl font-black text-slate-900">{mostFrequentCondition}</p>
-                                </div>
-                                <div className="rounded-2xl bg-emerald-100 p-4">
-                                    <ShieldCheck size={24} className="text-emerald-600" />
-                                </div>
-                            </div>
-                            <p className="mt-4 text-sm text-slate-500">{healthyScans} healthy scans have been recorded so far.</p>
-                        </div>
-                    </div>
-
-                    {historyLoading ? (
-                        <div className="rounded-[2rem] bg-white p-8 shadow-lg border border-slate-100">
-                            <div className="flex items-center gap-3 text-slate-500">
-                                <Loader2 size={20} className="animate-spin text-orange-500" />
-                                <p className="font-semibold">Loading your scan history...</p>
-                            </div>
-                        </div>
-                    ) : scanHistory.length === 0 ? (
-                        <div className="rounded-[2rem] border border-dashed border-orange-200 bg-white/80 p-10 text-center shadow-lg">
-                            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-100">
-                                <Microscope size={28} className="text-orange-500" />
-                            </div>
-                            <h3 className="text-2xl font-black text-slate-900">No scan history yet</h3>
-                            <p className="mt-3 text-slate-600 max-w-2xl mx-auto">
-                                Upload a crop image and run your first analysis. We will automatically save the result here for future reference.
+                            <p className="mt-4 text-sm text-slate-600">
+                                {healthyScans} healthy scans are also stored for baseline comparison.
                             </p>
                         </div>
-                    ) : (
-                        <div>
-                            <div className="flex items-center justify-between mb-4">
-                                <p className="text-sm font-bold text-slate-500">
-                                    Showing the latest {Math.min(scanHistory.length, HISTORY_PREVIEW_LIMIT)} of {scanHistory.length} saved scans
-                                </p>
+
+                        <div className="rounded-3xl border border-emerald-100 bg-emerald-50 p-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Latest Result</p>
+                                    <p className="mt-3 text-2xl font-black text-slate-900">{latestScan ? latestScan.condition : 'No scans yet'}</p>
+                                </div>
+                                <div className="rounded-2xl bg-white p-4 shadow-sm">
+                                    <ShieldCheck size={22} className="text-emerald-600" />
+                                </div>
                             </div>
-
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                {scanHistory.slice(0, HISTORY_PREVIEW_LIMIT).map((scan) => (
-                                    <div key={scan.id} className="rounded-[2rem] bg-white p-6 shadow-lg border border-slate-100">
-                                        <div className="flex items-start justify-between gap-4">
-                                            <div>
-                                                <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-500">{scan.crop || 'Crop Scan'}</p>
-                                                <h3 className="mt-2 text-2xl font-black text-slate-900">{scan.condition || scan.predictedLabel}</h3>
-                                                <p className="mt-2 text-sm text-slate-500 break-all">{scan.fileName || 'Uploaded crop image'}</p>
-                                            </div>
-
-                                            <div className={`rounded-2xl px-3 py-2 text-xs font-black uppercase tracking-wide ${
-                                                scan.isHealthy
-                                                    ? 'bg-emerald-100 text-emerald-700'
-                                                    : 'bg-red-100 text-red-700'
-                                            }`}>
-                                                {scan.isHealthy ? 'Healthy' : 'Needs Attention'}
-                                            </div>
-                                        </div>
-
-                                        <div className="mt-5 grid grid-cols-2 gap-4">
-                                            <div className="rounded-2xl bg-slate-50 p-4">
-                                                <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Confidence</p>
-                                                <p className="mt-2 text-2xl font-black text-slate-900">
-                                                    {typeof scan.confidence === 'number' ? `${(scan.confidence * 100).toFixed(1)}%` : 'N/A'}
-                                                </p>
-                                            </div>
-
-                                            <div className="rounded-2xl bg-slate-50 p-4">
-                                                <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Scanned On</p>
-                                                <p className="mt-2 text-sm font-bold leading-relaxed text-slate-900">
-                                                    {formatScanDate(scan.scannedAt)}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {!!scan.topPredictions?.length && (
-                                            <div className="mt-5">
-                                                <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Top Matches</p>
-                                                <div className="mt-3 flex flex-wrap gap-2">
-                                                    {scan.topPredictions.slice(0, 3).map((item) => (
-                                                        <span
-                                                            key={`${scan.id}-${item.label}`}
-                                                            className="rounded-full bg-orange-50 px-3 py-2 text-xs font-bold text-orange-700 border border-orange-100"
-                                                        >
-                                                            {item.condition} {(item.confidence * 100).toFixed(1)}%
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
+                            <p className="mt-4 text-sm text-slate-600">
+                                {latestScan
+                                    ? `${formatScanDate(latestScan.scannedAt)} | most frequent result: ${mostFrequentCondition}`
+                                    : 'Analyze your first crop image to start building history.'}
+                            </p>
                         </div>
-                    )}
+                    </div>
+                </div>
+
+                <div className="mb-20 rounded-[3rem] border border-slate-100 bg-white p-8 shadow-xl">
+                    <div className="max-w-3xl">
+                        <p className="text-sm font-black uppercase tracking-[0.24em] text-orange-500">What You Get</p>
+                        <h2 className="mt-2 text-4xl font-black text-slate-900">Everything Around Each Scan</h2>
+                        <p className="mt-3 text-slate-600">
+                            The diagnosis card stays focused on the current upload, while the supporting features live here in a cleaner overview section.
+                        </p>
+                    </div>
+
+                    <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+                        <div className="rounded-3xl border border-orange-100 bg-orange-50 p-6">
+                            <div className="inline-flex rounded-2xl bg-white p-4 shadow-sm">
+                                <Microscope size={24} className="text-orange-600" />
+                            </div>
+                            <h3 className="mt-5 text-lg font-black text-slate-900">AI-Powered Analysis</h3>
+                            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                                Deep learning models trained on 1M+ crop images.
+                            </p>
+                        </div>
+
+                        <div className="rounded-3xl border border-emerald-100 bg-emerald-50 p-6">
+                            <div className="inline-flex rounded-2xl bg-white p-4 shadow-sm">
+                                <CheckCircle size={24} className="text-emerald-600" />
+                            </div>
+                            <h3 className="mt-5 text-lg font-black text-slate-900">Instant Results</h3>
+                            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                                Get accurate diagnosis in seconds with confidence scores.
+                            </p>
+                        </div>
+
+                        <div className="rounded-3xl border border-amber-100 bg-amber-50 p-6">
+                            <div className="inline-flex rounded-2xl bg-white p-4 shadow-sm">
+                                <AlertCircle size={24} className="text-amber-600" />
+                            </div>
+                            <h3 className="mt-5 text-lg font-black text-slate-900">Treatment Guide</h3>
+                            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                                Get actionable recommendations and preventive measures.
+                            </p>
+                        </div>
+
+                        <div className="rounded-3xl border border-sky-100 bg-sky-50 p-6">
+                            <div className="inline-flex rounded-2xl bg-white p-4 shadow-sm">
+                                <Leaf size={24} className="text-sky-600" />
+                            </div>
+                            <h3 className="mt-5 text-lg font-black text-slate-900">Historical Tracking</h3>
+                            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                                Every successful scan is saved automatically to your farming history.
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Common Diseases Section */}

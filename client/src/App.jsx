@@ -3,9 +3,10 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './context/AuthContext';
 import Header from './components/layout/Header';
 import ProtectedRoute from './components/ProtectedRoute';
-import AIChatbot from './components/ai/AIChatbot';
+import AIChatbot from './components/ai/AIChatbotFixed';
 import Home from './pages/Home';
 import DiseaseDetection from './pages/DiseaseDetection';
+import DiseaseHistory from './pages/DiseaseHistory';
 import Marketplace from './pages/Marketplace';
 import Leftover from './pages/Leftover';
 import Login from './pages/Login';
@@ -25,6 +26,7 @@ function App() {
                         <Routes>
                             <Route path="/" element={<Home />} />
                             <Route path="/disease-detection" element={<ProtectedRoute><DiseaseDetection /></ProtectedRoute>} />
+                            <Route path="/disease-history" element={<ProtectedRoute><DiseaseHistory /></ProtectedRoute>} />
                             <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
                             <Route path="/leftover" element={<ProtectedRoute><Leftover /></ProtectedRoute>} />
                             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

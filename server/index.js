@@ -60,8 +60,8 @@ const model = genAI.getGenerativeModel({
 
 // Middleware
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Health Check
 app.get('/api/health', (req, res) => {
@@ -92,7 +92,8 @@ app.get('/api', (req, res) => {
             },
             chatbot: {
                 quickAsk: 'POST /api/chatbot/ask',
-                conversation: 'POST /api/chatbot/chat'
+                conversation: 'POST /api/chatbot/chat',
+                clear: 'POST /api/chatbot/clear'
             }
         }
     });
@@ -811,15 +812,79 @@ app.post('/api/chatbot/ask', async (req, res) => {
 // 📱 CHATBOT CONVERSATION (Multi-turn)
 // ============================================
 const conversations = {}; // Store conversations in memory
+const CHATBOT_ATTACHMENT_MAX_BYTES = 4 * 1024 * 1024;
+const CHATBOT_ALLOWED_ATTACHMENT_TYPES = new Set([
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'application/pdf',
+    'text/plain',
+]);
+
+const sanitizeChatAttachment = (attachment) => {
+    if (!attachment) {
+        return null;
+    }
+
+    const { name, mimeType, size, data } = attachment;
+
+    if (!name || !mimeType || !data) {
+        const error = new Error('Incomplete attachment payload.');
+        error.statusCode = 400;
+        throw error;
+    }
+
+    if (!CHATBOT_ALLOWED_ATTACHMENT_TYPES.has(mimeType)) {
+        const error = new Error('Unsupported attachment type.');
+        error.statusCode = 400;
+        throw error;
+    }
+
+    const parsedSize = Number(size) || 0;
+    if (parsedSize > CHATBOT_ATTACHMENT_MAX_BYTES) {
+        const error = new Error('Attachment exceeds the 4 MB limit.');
+        error.statusCode = 400;
+        throw error;
+    }
+
+    return {
+        name,
+        mimeType,
+        size: parsedSize,
+        data,
+    };
+};
+
+app.post('/api/chatbot/clear', (req, res) => {
+    const { userId } = req.body;
+
+    if (!userId) {
+        return res.status(400).json({
+            error: 'userId is required',
+        });
+    }
+
+    delete conversations[userId];
+
+    return res.json({
+        status: 'success',
+        userId,
+        message: 'Chat history cleared.',
+        timestamp: new Date().toISOString(),
+    });
+});
 
 app.post('/api/chatbot/chat', async (req, res) => {
     try {
-        const { userId, message, farmingContext = {} } = req.body;
+        const { userId, message, farmingContext = {}, attachment } = req.body;
+        const sanitizedAttachment = sanitizeChatAttachment(attachment);
+        const rawMessage = typeof message === 'string' ? message.trim() : '';
+        const normalizedMessage = rawMessage || 'Please review this attachment and help me understand it.';
 
         // 1. Validation
-        if (!userId || !message || message.trim() === '') {
+        if (!userId || (!rawMessage && !sanitizedAttachment)) {
             return res.status(400).json({
-                error: 'userId and message are required',
+                error: 'userId and either message or attachment are required',
             });
         }
 
@@ -830,7 +895,7 @@ app.post('/api/chatbot/chat', async (req, res) => {
 
         // 3. Map history correctly (Gemini expects 'user' and 'model' only)
         const chatHistory = conversations[userId].map(msg => ({
-            role: msg.role === 'assistant' ? 'model' : 'user',
+            role: msg.role === 'model' ? 'model' : 'user',
             parts: [{ text: msg.text }]
         }));
 
@@ -851,12 +916,27 @@ app.post('/api/chatbot/chat', async (req, res) => {
         });
 
         // 6. Send the new message
-        const result = await chat.sendMessage(message);
+        const messageParts = [{ text: normalizedMessage }];
+
+        if (sanitizedAttachment) {
+            messageParts.push({
+                inlineData: {
+                    data: sanitizedAttachment.data,
+                    mimeType: sanitizedAttachment.mimeType,
+                },
+            });
+        }
+
+        const result = await chat.sendMessage(messageParts);
         const assistantReply = result.response.text();
 
         // 7. Update the local conversation memory
+        const messageSummary = sanitizedAttachment
+            ? `${normalizedMessage}\n\nAttached file: ${sanitizedAttachment.name} (${sanitizedAttachment.mimeType}, ${sanitizedAttachment.size} bytes)`
+            : normalizedMessage;
+
         conversations[userId].push(
-            { role: 'user', text: message },
+            { role: 'user', text: messageSummary },
             { role: 'model', text: assistantReply }
         );
 
@@ -870,6 +950,7 @@ app.post('/api/chatbot/chat', async (req, res) => {
             status: 'success',
             userId,
             reply: assistantReply,
+            attachmentAccepted: Boolean(sanitizedAttachment),
             farmingContext: {
                 cropType: farmingContext.cropType || 'Not specified',
                 region: farmingContext.region || 'Not specified',
@@ -881,6 +962,13 @@ app.post('/api/chatbot/chat', async (req, res) => {
 
     } catch (error) {
         console.error('Multi-turn Chat Error:', error.message);
+
+        if (error.statusCode === 400) {
+            return res.status(400).json({
+                error: 'Invalid attachment',
+                message: error.message,
+            });
+        }
         
         // Error Handling for Quota (429)
         if (error.message?.includes('429') || error.message?.includes('Quota')) {
