@@ -26,6 +26,8 @@ python -m pip install -r requirements.txt
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
+Use Python `3.12.8` to match the deployed Render service.
+
 ## Render Setup
 
 Create a new Render Web Service for this folder.
@@ -41,6 +43,7 @@ Create a new Render Web Service for this folder.
 Use values like:
 
 ```text
+# Local only. Render provides PORT automatically.
 PORT=8000
 MODEL_PATH=models/plant_disease_model.pt
 LABELS_PATH=models/labels.json
@@ -76,10 +79,11 @@ For your current Node backend Render service:
 Wherever the frontend runs, set:
 
 ```text
+VITE_API_BASE_URL=https://your-main-backend.onrender.com
 VITE_INFERENCE_API_BASE_URL=https://your-inference-service.onrender.com
 ```
 
-This is separate from your normal backend API URL.
+The disease detection page must point `VITE_INFERENCE_API_BASE_URL` to this service. It is separate from the normal backend API URL.
 
 ## Predict Example
 

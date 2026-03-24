@@ -143,6 +143,12 @@ python ml/predict_image_torch.py ^
 3. connect the frontend upload flow to the prediction endpoint
 4. optionally save user scan images to Firebase Storage and prediction history to Firestore
 
+The current app already follows this direction:
+
+- the trained model is served from `inference-service/`
+- the frontend disease detection page calls that service through `VITE_INFERENCE_API_BASE_URL`
+- successful scan metadata is saved to Firestore history
+
 ## Firebase Note
 
 You do **not** need to put the full `color` training folder into Firebase or Firestore for the hackathon to work.
