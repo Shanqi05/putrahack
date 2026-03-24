@@ -1,165 +1,172 @@
-# TripleGain
+# 🌱 TripleGain
 
-TripleGain is a smart farming platform built to help growers make faster, better decisions with AI-assisted disease detection, crop operations tools, a marketplace flow, and a built-in agricultural assistant.
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)
+![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=white)
 
-It combines a modern React frontend, a Node backend for app features, and a dedicated Python inference service for plant disease prediction.
+> **Empowering growers to make faster, better decisions.**
+> TripleGain is a comprehensive smart farming platform that combines AI-assisted disease detection, crop operations tools, a marketplace flow, and a built-in agricultural assistant.
 
-## What TripleGain Delivers
+---
 
-- AI plant disease detection with image upload, confidence scores, history tracking, and treatment guidance
-- Farmer dashboard with weather awareness and recent AI scan visibility
-- Marketplace and leftover-management flows for produce handling
-- AI chatbot support with attachments, emoji input, and clear-chat behavior
-- Firebase-backed app data for users, messages, notifications, and disease scan history
+## ✨ What TripleGain Delivers
 
-## System Overview
+* 🔍 **AI Plant Disease Detection:** Image upload with confidence scores, history tracking, and actionable treatment guidance.
+* 📊 **Farmer Dashboard:** Real-time weather awareness and recent AI scan visibility at a glance.
+* 🛒 **Integrated Marketplace:** End-to-end flows for produce handling and leftover-management.
+* 💬 **AI Agricultural Assistant:** Chatbot support featuring attachments, emoji input, and clear-chat behavior.
+* ☁️ **Cloud-Backed Data:** Robust Firebase integration for users, messaging, notifications, and scan history.
 
-TripleGain is split into 4 clear parts:
+---
 
-- `client/`: React + Vite frontend
-- `server/`: Node + Express API for auth, chatbot, weather, and app logic
-- `inference-service/`: FastAPI + PyTorch service for plant disease prediction
-- `ml/`: training scripts, manifests, and model pipeline notes
+## 🏗 System Architecture
 
-## Repository Layout
+TripleGain relies on a modern, decoupled microservices architecture divided into four core components:
 
 ```text
 putrahack/
-|-- client/
-|-- server/
-|-- inference-service/
-|-- ml/
+├── 💻 client/             # React + Vite frontend
+├── ⚙️ server/             # Node + Express API (Auth, Chatbot, Weather, Logic)
+├── 🧠 inference-service/  # FastAPI + PyTorch (Plant disease prediction)
+└── 🔬 ml/                 # Training scripts, manifests, and model pipeline
 ```
 
-## Current Feature Status
+### 📍 Current Feature Status
 
-- Authentication: implemented
-- Dashboard: implemented
-- Disease detection: implemented
-- Disease scan history: implemented
-- Treatment guide: implemented
-- Chatbot: implemented
-- Marketplace: implemented
-- Leftover workflow: implemented
-- ML training and inference pipeline: implemented
+| Feature | Status | Feature | Status |
+| :--- | :--- | :--- | :--- |
+| **Authentication** | ✅ Implemented | **Chatbot** | ✅ Implemented |
+| **Dashboard** | ✅ Implemented | **Marketplace** | ✅ Implemented |
+| **Disease Detection** | ✅ Implemented | **Leftover Workflow** | ✅ Implemented |
+| **Scan History** | ✅ Implemented | **ML Training Pipeline**| ✅ Implemented |
+| **Treatment Guide** | ✅ Implemented | **Inference Pipeline** | ✅ Implemented |
 
-## Quick Start
+-----
 
-Create these files first:
+## 🚀 Quick Start
 
-- `server/.env` from `server/.env.example`
-- `client/.env` from `client/.env.example`
-- optional: `inference-service/.env` from `inference-service/.env.example`
+### 1\. Environment Setup
 
-Run the project in 3 terminals:
+Before running the application, duplicate the example environment files:
+
+  * Copy `server/.env.example` to `server/.env`
+  * Copy `client/.env.example` to `client/.env`
+  * *(Optional)* Copy `inference-service/.env.example` to `inference-service/.env`
+
+### 2\. Run the Services
+
+You will need three separate terminal instances to run the full stack locally.
+
+**Terminal 1: Main Backend**
 
 ```bash
-# Terminal 1 - Main backend
 cd server
 npm install
 npm start
+```
 
-# Terminal 2 - Inference service
+**Terminal 2: AI Inference Service**
+
+```bash
 cd inference-service
 python -m pip install -r requirements.txt
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
 
-# Terminal 3 - Frontend
+**Terminal 3: Frontend Client**
+
+```bash
 cd client
 npm install
 npm run dev
 ```
 
-Open:
+### 3\. Access the Application
 
-- Frontend: `http://localhost:3000`
-- Main backend health: `http://localhost:5000/api/health`
-- Inference service health: `http://localhost:8000/health`
+  * **Frontend UI:** `http://localhost:3000`
+  * **Main Backend Health:** `http://localhost:5000/api/health`
+  * **Inference Service Health:** `http://localhost:8000/health`
 
-## Environment Setup
+-----
 
-### Frontend
+## ⚙️ Environment Variables
 
-For local development:
+### Frontend (`client/.env`)
 
-```env
-VITE_API_BASE_URL=http://localhost:5000
-VITE_INFERENCE_API_BASE_URL=http://localhost:8000
+| Environment | `VITE_API_BASE_URL` | `VITE_INFERENCE_API_BASE_URL` |
+| :--- | :--- | :--- |
+| **Local** | `http://localhost:5000` | `http://localhost:8000` |
+| **Production** | `https://vhack-backend-branch.onrender.com` | `https://plant-disease-inference.onrender.com` |
+
+### Main Backend (`server/.env`)
+
+Required keys for full functionality:
+
+  * `JWT_SECRET`
+  * `GOOGLE_AI_API_KEY`
+  * Firebase configuration credentials
+
+### Inference Service (`inference-service/.env`)
+
+Required keys for the ML model:
+
+  * `MODEL_PATH`
+  * `LABELS_PATH`
+  * `ALLOWED_ORIGINS`
+  * `TOP_K_DEFAULT`
+
+-----
+
+## 🔬 AI Disease Detection Flow
+
+The core plant disease feature is powered by our dedicated Python inference service.
+
+```text
+[ User Upload ] ➔ (React Frontend) 
+                       │
+                       ▼ Secure API Route
+             (FastAPI Inference Service) ➔ Analyzes via PyTorch Model
+                       │
+                       ▼ Returns Label, Crop, Condition & Confidence
+             (React Frontend) ➔ Saves Metadata to (Firebase/Firestore)
+                       │
+                       ▼
+[ Renders Diagnosis, Treatment Steps & History UI ]
 ```
 
-For Render or Lovable deployments:
+> ⚠️ **Important:** Ensure `VITE_INFERENCE_API_BASE_URL` is correctly mapped. If missing, the frontend will fall back to the main backend URL, resulting in a failed scan request.
 
-```env
-VITE_API_BASE_URL=https://vhack-backend-branch.onrender.com
-VITE_INFERENCE_API_BASE_URL=https://plant-disease-inference.onrender.com
-```
+-----
 
-### Main Backend
+## 🌍 Deployment
 
-Required values include:
+### Main Backend (Render)
 
-- `JWT_SECRET`
-- `GOOGLE_AI_API_KEY`
-- Firebase config values used by the Express app
+  * **Runtime:** Node
+  * **Root Directory:** `server`
+  * **Build Command:** `npm install`
+  * **Start Command:** `npm start`
 
-### Inference Service
+### Inference Service (Render)
 
-Required values include:
+  * **Runtime:** Python
+  * **Root Directory:** `inference-service`
+  * **Build Command:** `pip install -r requirements.txt`
+  * **Start Command:** `uvicorn main:app --host 0.0.0.0 --port $PORT`
+  * **Health Check:** `/health`
 
-- `MODEL_PATH`
-- `LABELS_PATH`
-- `ALLOWED_ORIGINS`
-- `TOP_K_DEFAULT`
+### Frontend (Lovable)
 
-Render provides `PORT` automatically for deployed services.
+Point the Lovable project root to the `client/` directory and inject the Production Environment Variables listed above.
 
-## Disease Detection Flow
+-----
 
-The plant disease feature depends on the separate inference service.
+## 📚 Related Documentation
 
-Flow:
+Dive deeper into the specific subsystems:
 
-1. The frontend uploads an image from `client/src/pages/DiseaseDetection.jsx`.
-2. The frontend sends the file to the inference service through `client/src/config/api.js`.
-3. The inference service returns the predicted label, crop, condition, confidence, and top predictions.
-4. The frontend saves successful scan metadata to Firestore history.
-5. The UI renders the diagnosis, treatment guide, and historical tracking.
-
-Important:
-
-- `VITE_INFERENCE_API_BASE_URL` must point to the inference service
-- if that variable is missing, the frontend can fall back to the main backend URL and the scan request can fail
-
-## Deployment
-
-### Main Backend on Render
-
-- Runtime: Node
-- Root directory: `server`
-- Build command: `npm install`
-- Start command: `npm start`
-
-### Inference Service on Render
-
-- Runtime: Python
-- Root directory: `inference-service`
-- Build command: `pip install -r requirements.txt`
-- Start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-- Health check path: `/health`
-
-### Frontend on Lovable
-
-The Lovable project should use the frontend app from `client/` as its project root content.
-
-Set these Lovable environment variables:
-
-```env
-VITE_API_BASE_URL=https://vhack-backend-branch.onrender.com
-VITE_INFERENCE_API_BASE_URL=https://plant-disease-inference.onrender.com
-```
-
-## Related Documentation
-
-- ML pipeline: `ml/README.md`
-- Inference service: `inference-service/README.md`
-- Dataset upload notes: `server/PLANT_DISEASE_PIPELINE.md`
+  * [🧠 ML Pipeline Notes](https://www.google.com/search?q=ml/README.md)
+  * [⚙️ Inference Service Specs](https://www.google.com/search?q=inference-service/README.md)
+  * [📂 Dataset Upload Logistics](https://www.google.com/search?q=server/PLANT_DISEASE_PIPELINE.md)
