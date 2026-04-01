@@ -61,26 +61,29 @@ const DiseaseHistory = () => {
     const mostFrequentCondition = getMostFrequentCondition(scanHistory);
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-slate-50 to-orange-50 px-6 pb-20 pt-24">
-            <div className="mx-auto max-w-6xl">
-                <div className="relative mb-12 overflow-hidden rounded-[3rem] bg-gradient-to-br from-slate-900 via-slate-800 to-orange-600 p-10 text-white shadow-2xl">
-                    <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-orange-300/15 blur-[110px]"></div>
-
-                    <div className="relative z-10">
-                        <Link
-                            to="/disease-detection"
-                            className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold text-white/90 transition hover:bg-white/15"
-                        >
-                            <ArrowLeft size={16} />
-                            Back to Disease Detection
-                        </Link>
-
-                        <p className="mt-8 text-sm font-black uppercase tracking-[0.25em] text-orange-200">Historical Tracking</p>
-                        <h1 className="mt-3 text-4xl font-black md:text-5xl">Your Crop Scan History</h1>
-                        <p className="mt-4 max-w-3xl text-sm leading-relaxed text-orange-50 md:text-base">
-                            Review previous detections, compare confidence over time, and open the treatment guide for each saved scan whenever you need it.
+        <div className="min-h-screen bg-[#F8FAFC] px-6 pb-20 pt-28">
+            <div className="mx-auto max-w-7xl">
+                <div className="mb-10 flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+                    <div className="max-w-3xl">
+                        <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-emerald-700">
+                            <Clock3 size={14} />
+                            Saved History
+                        </div>
+                        <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
+                            Scan <span className="text-emerald-600">History</span>
+                        </h1>
+                        <p className="mt-3 max-w-2xl text-sm font-medium leading-relaxed text-slate-500 md:text-base">
+                            Review your earlier crop checks, compare results over time, and reopen treatment guidance whenever needed.
                         </p>
                     </div>
+
+                    <Link
+                        to="/disease-detection"
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-3.5 text-sm font-black text-slate-700 transition hover:border-emerald-200 hover:text-emerald-700"
+                    >
+                        <ArrowLeft size={18} />
+                        Back to Disease Detection 
+                    </Link>
                 </div>
 
                 {historyError && (
@@ -89,66 +92,86 @@ const DiseaseHistory = () => {
                     </div>
                 )}
 
-                <div className="mb-10 grid grid-cols-1 gap-6 md:grid-cols-4">
-                    <div className="rounded-3xl border border-orange-100 bg-white p-6 shadow-lg">
-                        <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Total Scans</p>
-                        <p className="mt-3 text-4xl font-black text-slate-900">{totalScans}</p>
-                        <p className="mt-3 text-sm text-slate-500">All saved detections linked to your account.</p>
+                <div className="rounded-[2.5rem] border border-slate-100 bg-white p-8 shadow-xl shadow-slate-200/50">
+                    <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="max-w-2xl">
+                            <p className="text-sm font-black uppercase tracking-[0.18em] text-emerald-600">Overview</p>
+                            <h2 className="mt-2 text-3xl font-black text-slate-900">Your saved scan summary</h2>
+                            <p className="mt-3 text-sm leading-relaxed text-slate-500">
+                                Everything from disease alerts to the latest saved result stays organized here in one place.
+                            </p>
+                        </div>
+
+                        <Link
+                            to="/disease-detection"
+                            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-black text-white transition hover:bg-emerald-700"
+                        >
+                            Scan New Image
+                            <ArrowRight size={18} />
+                        </Link>
                     </div>
 
-                    <div className="rounded-3xl border border-rose-100 bg-white p-6 shadow-lg">
-                        <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Disease Alerts</p>
-                        <p className="mt-3 text-4xl font-black text-slate-900">{diseaseAlerts}</p>
-                        <p className="mt-3 text-sm text-slate-500">Scans that were flagged as needing attention.</p>
-                    </div>
+                    <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-4">
+                        <div className="rounded-[2rem] bg-slate-50 p-6">
+                            <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Total Scans</p>
+                            <p className="mt-3 text-4xl font-black text-slate-900">{totalScans}</p>
+                            <p className="mt-3 text-sm text-slate-500">All saved detections linked to your account.</p>
+                        </div>
 
-                    <div className="rounded-3xl border border-emerald-100 bg-white p-6 shadow-lg">
-                        <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Healthy Scans</p>
-                        <p className="mt-3 text-4xl font-black text-slate-900">{healthyScans}</p>
-                        <p className="mt-3 text-sm text-slate-500">Good baseline scans you can compare against later.</p>
-                    </div>
+                        <div className="rounded-[2rem] bg-rose-50 p-6">
+                            <p className="text-xs font-black uppercase tracking-[0.16em] text-rose-500">Disease Alerts</p>
+                            <p className="mt-3 text-4xl font-black text-slate-900">{diseaseAlerts}</p>
+                            <p className="mt-3 text-sm text-slate-500">Scans that were flagged as needing attention.</p>
+                        </div>
 
-                    <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-lg">
-                        <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Most Frequent Result</p>
-                        <p className="mt-3 text-2xl font-black text-slate-900">{mostFrequentCondition}</p>
-                        <p className="mt-3 text-sm text-slate-500">
-                            {latestScan ? `Latest: ${formatScanDate(latestScan.scannedAt)}` : 'No scans recorded yet.'}
-                        </p>
+                        <div className="rounded-[2rem] bg-emerald-50 p-6">
+                            <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-600">Healthy Scans</p>
+                            <p className="mt-3 text-4xl font-black text-slate-900">{healthyScans}</p>
+                            <p className="mt-3 text-sm text-slate-500">Useful baseline scans you can compare later.</p>
+                        </div>
+
+                        <div className="rounded-[2rem] bg-sky-50 p-6">
+                            <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-600">Most Frequent</p>
+                            <p className="mt-3 text-2xl font-black text-slate-900">{mostFrequentCondition}</p>
+                            <p className="mt-3 text-sm text-slate-500">
+                                {latestScan ? `Latest: ${formatScanDate(latestScan.scannedAt)}` : 'No scans recorded yet.'}
+                            </p>
+                        </div>
                     </div>
                 </div>
 
                 {historyLoading ? (
-                    <div className="rounded-[2rem] border border-slate-100 bg-white p-8 shadow-lg">
+                    <div className="mt-10 rounded-[2rem] border border-slate-100 bg-white p-8 shadow-xl shadow-slate-200/40">
                         <div className="flex items-center gap-3 text-slate-500">
-                            <Loader2 size={20} className="animate-spin text-orange-500" />
+                            <Loader2 size={20} className="animate-spin text-emerald-600" />
                             <p className="font-semibold">Loading your scan history...</p>
                         </div>
                     </div>
                 ) : scanHistory.length === 0 ? (
-                    <div className="rounded-[2rem] border border-dashed border-orange-200 bg-white/80 p-10 text-center shadow-lg">
-                        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-100">
-                            <Leaf size={28} className="text-orange-500" />
+                    <div className="mt-10 rounded-[2rem] border border-dashed border-emerald-200 bg-white p-10 text-center shadow-xl shadow-slate-200/40">
+                        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50">
+                            <Leaf size={28} className="text-emerald-600" />
                         </div>
                         <h2 className="text-2xl font-black text-slate-900">No scan history yet</h2>
-                        <p className="mx-auto mt-3 max-w-2xl text-slate-600">
+                        <p className="mx-auto mt-3 max-w-2xl text-slate-500">
                             Start by analyzing a crop image. Each successful scan will be saved here so you can revisit the result and treatment guide later.
                         </p>
                         <Link
                             to="/disease-detection"
-                            className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-6 py-3 font-black text-white transition hover:bg-orange-600"
+                            className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3 font-black text-white transition hover:bg-emerald-700"
                         >
                             Scan a Crop Now
                             <ArrowRight size={18} />
                         </Link>
                     </div>
                 ) : (
-                    <div className="space-y-6">
+                    <div className="mt-10 space-y-6">
                         {scanHistory.map((scan) => {
                             const treatmentGuide = getTreatmentGuide(scan);
                             const isExpanded = expandedScanId === scan.id;
 
                             return (
-                                <div key={scan.id} className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-lg">
+                                <div key={scan.id} className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-xl shadow-slate-200/40">
                                     <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                                         <div className="flex-1">
                                             <div className="flex flex-wrap items-center gap-3">
@@ -193,9 +216,9 @@ const DiseaseHistory = () => {
                                         <button
                                             type="button"
                                             onClick={() => setExpandedScanId(isExpanded ? null : scan.id)}
-                                            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-orange-200 bg-orange-50 px-5 py-3 text-sm font-black text-orange-700 transition hover:bg-orange-100"
+                                            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-black text-slate-700 transition hover:border-emerald-200 hover:text-emerald-700"
                                         >
-                                            {isExpanded ? 'Hide Treatment Guide' : 'View Treatment Guide'}
+                                            {isExpanded ? 'Hide Details' : 'Show Details'}
                                             <ChevronDown size={18} className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                                         </button>
                                     </div>
@@ -217,10 +240,10 @@ const DiseaseHistory = () => {
                                     )}
 
                                     {isExpanded && treatmentGuide && (
-                                        <div className="mt-6 rounded-3xl border border-orange-100 bg-slate-50 p-5">
+                                        <div className="mt-6 rounded-[2rem] border border-slate-200 bg-slate-50 p-5">
                                             <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                                                <div>
-                                                    <p className="text-xs font-black uppercase tracking-[0.24em] text-orange-500">Treatment Guide</p>
+                                                <div className="max-w-3xl">
+                                                    <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-600">Treatment Guide</p>
                                                     <h3 className="mt-2 text-xl font-black text-slate-900">{treatmentGuide.title}</h3>
                                                     <p className="mt-2 text-sm leading-relaxed text-slate-600">{treatmentGuide.summary}</p>
                                                 </div>
@@ -230,8 +253,8 @@ const DiseaseHistory = () => {
                                             </div>
 
                                             <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-3">
-                                                <div className="rounded-2xl border border-orange-100 bg-white p-4">
-                                                    <div className="flex items-center gap-2 text-orange-700">
+                                                <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                                                    <div className="flex items-center gap-2 text-emerald-700">
                                                         <AlertCircle size={18} />
                                                         <p className="text-sm font-black uppercase tracking-[0.18em]">Immediate Actions</p>
                                                     </div>
@@ -242,7 +265,7 @@ const DiseaseHistory = () => {
                                                     </ul>
                                                 </div>
 
-                                                <div className="rounded-2xl border border-emerald-100 bg-white p-4">
+                                                <div className="rounded-2xl border border-slate-200 bg-white p-5">
                                                     <div className="flex items-center gap-2 text-emerald-700">
                                                         <CheckCircle size={18} />
                                                         <p className="text-sm font-black uppercase tracking-[0.18em]">Prevention Tips</p>
@@ -254,8 +277,8 @@ const DiseaseHistory = () => {
                                                     </ul>
                                                 </div>
 
-                                                <div className="rounded-2xl border border-sky-100 bg-white p-4">
-                                                    <div className="flex items-center gap-2 text-sky-700">
+                                                <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                                                    <div className="flex items-center gap-2 text-emerald-700">
                                                         <ShieldCheck size={18} />
                                                         <p className="text-sm font-black uppercase tracking-[0.18em]">Monitor Next</p>
                                                     </div>

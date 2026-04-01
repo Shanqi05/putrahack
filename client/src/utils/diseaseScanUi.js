@@ -32,12 +32,12 @@ export const formatRelativeScanTime = (value) => {
 export const getUrgencyStyles = (urgency) => {
     switch (urgency) {
         case 'Critical':
-            return 'bg-red-100 text-red-700 border-red-200';
+            return 'bg-slate-100 text-slate-700 border-slate-200';
         case 'High':
-            return 'bg-orange-100 text-orange-700 border-orange-200';
+            return 'bg-slate-100 text-slate-700 border-slate-200';
         case 'Medium':
-            return 'bg-amber-100 text-amber-700 border-amber-200';
+            return 'bg-slate-100 text-slate-700 border-slate-200';
         default:
-            return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+            return 'bg-emerald-50 text-emerald-700 border-emerald-200';
     }
 };

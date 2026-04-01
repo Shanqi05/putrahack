@@ -620,37 +620,171 @@ app.get('/api/leftover', (req, res) => {
     res.json({ message: 'Leftover management endpoint', data: [] });
 });
 
+const WEATHER_API_URL = process.env.WEATHER_API_URL || 'https://api.open-meteo.com/v1/forecast';
+const WEATHER_CACHE_TTL_MS = Number.parseInt(process.env.WEATHER_CACHE_TTL_MS || `${10 * 60 * 1000}`, 10);
+const weatherCache = new Map();
+
+const formatWeatherCoordinate = (value) => {
+    const parsedValue = Number.parseFloat(value);
+    return Number.isFinite(parsedValue) ? parsedValue.toFixed(4) : String(value);
+};
+
+const createWeatherCacheKey = (latitude, longitude, cropType = '') =>
+    `${formatWeatherCoordinate(latitude)}:${formatWeatherCoordinate(longitude)}:${cropType.trim().toLowerCase() || 'general'}`;
+
+const getCachedWeatherPayload = (cacheKey, { allowStale = false } = {}) => {
+    const cachedEntry = weatherCache.get(cacheKey);
+    if (!cachedEntry) return null;
+
+    const isExpired = Date.now() > cachedEntry.expiresAt;
+    if (isExpired && !allowStale) {
+        return null;
+    }
+
+    return {
+        data: cachedEntry.data,
+        isExpired,
+    };
+};
+
+const writeCachedWeatherPayload = (cacheKey, payload) => {
+    weatherCache.set(cacheKey, {
+        data: payload,
+        expiresAt: Date.now() + WEATHER_CACHE_TTL_MS,
+    });
+};
+
+const buildWeatherAlerts = (current, daily) => {
+    const alerts = [];
+
+    if ((current?.precipitation ?? 0) > 10) {
+        alerts.push({
+            level: 'warning',
+            message: `Heavy rainfall expected: ${current.precipitation}mm. Check crop drainage.`,
+            icon: 'Rain'
+        });
+    }
+
+    if ((current?.wind_speed_10m ?? 0) > 40) {
+        alerts.push({
+            level: 'warning',
+            message: `High wind speed: ${current.wind_speed_10m} km/h. Secure crops and protect seedlings.`,
+            icon: 'Wind'
+        });
+    }
+
+    if ((current?.temperature_2m ?? 0) > 38) {
+        alerts.push({
+            level: 'caution',
+            message: `Heat alert: ${current.temperature_2m}°C. Increase irrigation frequency.`,
+            icon: 'Heat'
+        });
+    }
+
+    if ((current?.relative_humidity_2m ?? 100) < 30) {
+        alerts.push({
+            level: 'caution',
+            message: `Low humidity: ${current.relative_humidity_2m}%. Risk of pest infestation. Monitor crops closely.`,
+            icon: 'Humidity'
+        });
+    }
+
+    if ((daily?.temperature_2m_min?.[0] ?? 1) < 0) {
+        alerts.push({
+            level: 'danger',
+            message: `Frost alert! Temperature may drop to ${daily.temperature_2m_min[0]}°C. Protect sensitive crops.`,
+            icon: 'Frost'
+        });
+    }
+
+    return alerts;
+};
+
+const buildWeatherPayload = (weatherData, latitude, longitude, cropType = '', source = 'server') => {
+    const current = weatherData?.current;
+    const daily = weatherData?.daily;
+
+    if (!current || !daily) {
+        throw new Error('Incomplete weather data received from provider');
+    }
+
+    return {
+        status: 'success',
+        location: {
+            latitude,
+            longitude,
+            timezone: weatherData.timezone || 'auto'
+        },
+        currentWeather: {
+            temperature: `${current.temperature_2m}°C`,
+            condition: current.weather_code,
+            humidity: `${current.relative_humidity_2m}%`,
+            windSpeed: `${current.wind_speed_10m} km/h`,
+            precipitation: `${current.precipitation}mm`
+        },
+        sevenDayForecast: {
+            dates: daily.time?.slice(0, 7) || [],
+            maxTemps: daily.temperature_2m_max?.slice(0, 7) || [],
+            minTemps: daily.temperature_2m_min?.slice(0, 7) || [],
+            precipitation: daily.precipitation_sum?.slice(0, 7) || []
+        },
+        alerts: buildWeatherAlerts(current, daily),
+        timestamp: new Date().toISOString(),
+        meta: {
+            source,
+            cropType
+        }
+    };
+};
+
 // ============================================
 // 🌤️ WEATHER ALERT API
 // ============================================
 app.post('/api/weather/alert', async (req, res) => {
-    try {
-        const { latitude, longitude, cropType } = req.body;
+    const { latitude, longitude, cropType = '' } = req.body;
 
-        if (!latitude || !longitude) {
-            return res.status(400).json({
-                error: 'Missing latitude or longitude',
-                required: ['latitude', 'longitude', 'cropType']
-            });
-        }
+    if (latitude == null || longitude == null) {
+        return res.status(400).json({
+            error: 'Missing latitude or longitude',
+            required: ['latitude', 'longitude', 'cropType']
+        });
+    }
+
+    const cacheKey = createWeatherCacheKey(latitude, longitude, cropType);
+    const cachedWeather = getCachedWeatherPayload(cacheKey);
+    if (cachedWeather?.data) {
+        return res.json({
+            ...cachedWeather.data,
+            meta: {
+                ...(cachedWeather.data.meta || {}),
+                servedFromCache: true,
+                stale: false
+            }
+        });
+    }
+
+    try {
 
         // Fetch weather data from Open-Meteo (Free weather API)
         const weatherResponse = await axios.get(
-            `https://api.open-meteo.com/v1/forecast`,
+            WEATHER_API_URL,
             {
                 params: {
                     latitude: latitude.toString(),
                     longitude: longitude.toString(),
                     current: 'temperature_2m,weather_code,wind_speed_10m,relative_humidity_2m,precipitation',
                     daily: 'precipitation_sum,temperature_2m_max,temperature_2m_min,weather_code',
-                    forecast_days: '7'
+                    forecast_days: '7',
+                    timezone: 'auto'
                 },
                 timeout: 10000
             }
         );
 
-        const current = weatherResponse.data.current;
-        const daily = weatherResponse.data.daily;
+        const payload = buildWeatherPayload(weatherResponse.data, latitude, longitude, cropType);
+        writeCachedWeatherPayload(cacheKey, payload);
+
+        return res.json(payload);
 
         // Generate weather alerts based on conditions
         const alerts = [];
@@ -720,10 +854,28 @@ app.post('/api/weather/alert', async (req, res) => {
             timestamp: new Date().toISOString()
         });
     } catch (error) {
-        console.error('Weather API Error:', error.message);
-        res.status(500).json({
+        const staleCachedWeather = getCachedWeatherPayload(cacheKey, { allowStale: true });
+        if (staleCachedWeather?.data) {
+            return res.json({
+                ...staleCachedWeather.data,
+                meta: {
+                    ...(staleCachedWeather.data.meta || {}),
+                    servedFromCache: true,
+                    stale: true
+                }
+            });
+        }
+
+        const upstreamStatus = error.response?.status;
+        const errorMessage = upstreamStatus === 429
+            ? 'Weather provider is temporarily rate-limited. Please try again shortly.'
+            : error.message;
+
+        console.error('Weather API Error:', upstreamStatus ? `${upstreamStatus} ${error.message}` : error.message);
+        return res.status(upstreamStatus === 429 ? 503 : 500).json({
             error: 'Failed to fetch weather data',
-            message: error.message
+            message: errorMessage,
+            upstreamStatus
         });
     }
 });

@@ -1,6 +1,10 @@
 // Weather Alert API service - TripleGain Backend
 import { getApiUrl } from "../config/api";
 
+const WEATHER_CACHE_PREFIX = "triplegain-weather";
+const WEATHER_CACHE_TTL_MS = 10 * 60 * 1000;
+const OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
+
 const WEATHER_CODE_LABELS = {
     0: "Clear sky",
     1: "Mainly clear",
@@ -56,29 +60,233 @@ const resolveWeatherCondition = (value) => {
     return value || "Unknown";
 };
 
-export const getWeatherAlert = async (latitude, longitude, cropType = "") => {
-    try {
-        const response = await fetch(getApiUrl("/weather/alert"), {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                latitude,
-                longitude,
-                cropType,
-            }),
-        });
+const formatCoordinate = (value) => {
+    const parsedValue = Number.parseFloat(value);
+    return Number.isFinite(parsedValue) ? parsedValue.toFixed(4) : String(value);
+};
 
-        if (!response.ok) {
-            throw new Error("Failed to fetch weather alerts");
+const createWeatherCacheKey = (latitude, longitude, cropType = "") =>
+    `${WEATHER_CACHE_PREFIX}:${formatCoordinate(latitude)}:${formatCoordinate(longitude)}:${cropType.trim().toLowerCase() || "general"}`;
+
+const getStorage = () => {
+    if (typeof window === "undefined") return null;
+
+    try {
+        return window.localStorage;
+    } catch (error) {
+        console.warn("Weather cache unavailable:", error);
+        return null;
+    }
+};
+
+const readCachedWeather = (cacheKey, { allowStale = false } = {}) => {
+    const storage = getStorage();
+    if (!storage) return null;
+
+    try {
+        const rawValue = storage.getItem(cacheKey);
+        if (!rawValue) return null;
+
+        const parsedValue = JSON.parse(rawValue);
+        if (!parsedValue?.data) return null;
+
+        const isExpired = typeof parsedValue.expiresAt === "number" && Date.now() > parsedValue.expiresAt;
+        if (isExpired && !allowStale) return null;
+
+        return {
+            data: parsedValue.data,
+            isExpired,
+        };
+    } catch (error) {
+        console.warn("Weather cache read failed:", error);
+        return null;
+    }
+};
+
+const writeCachedWeather = (cacheKey, data) => {
+    const storage = getStorage();
+    if (!storage) return;
+
+    try {
+        storage.setItem(
+            cacheKey,
+            JSON.stringify({
+                data,
+                expiresAt: Date.now() + WEATHER_CACHE_TTL_MS,
+            })
+        );
+    } catch (error) {
+        console.warn("Weather cache write failed:", error);
+    }
+};
+
+const buildWeatherAlerts = (current, daily) => {
+    const alerts = [];
+
+    if ((current?.precipitation ?? 0) > 10) {
+        alerts.push({
+            level: "warning",
+            message: `Heavy rainfall expected: ${current.precipitation}mm. Check crop drainage.`,
+            icon: "Rain",
+        });
+    }
+
+    if ((current?.wind_speed_10m ?? 0) > 40) {
+        alerts.push({
+            level: "warning",
+            message: `High wind speed: ${current.wind_speed_10m} km/h. Secure crops and protect seedlings.`,
+            icon: "Wind",
+        });
+    }
+
+    if ((current?.temperature_2m ?? 0) > 38) {
+        alerts.push({
+            level: "caution",
+            message: `Heat alert: ${current.temperature_2m}°C. Increase irrigation frequency.`,
+            icon: "Heat",
+        });
+    }
+
+    if ((current?.relative_humidity_2m ?? 100) < 30) {
+        alerts.push({
+            level: "caution",
+            message: `Low humidity: ${current.relative_humidity_2m}%. Risk of pest infestation. Monitor crops closely.`,
+            icon: "Humidity",
+        });
+    }
+
+    if ((daily?.temperature_2m_min?.[0] ?? 1) < 0) {
+        alerts.push({
+            level: "danger",
+            message: `Frost alert! Temperature may drop to ${daily.temperature_2m_min[0]}°C. Protect sensitive crops.`,
+            icon: "Frost",
+        });
+    }
+
+    return alerts;
+};
+
+const buildWeatherPayload = (weatherData, latitude, longitude, cropType = "", source = "backend") => {
+    const current = weatherData?.current;
+    const daily = weatherData?.daily;
+
+    if (!current || !daily) {
+        throw new Error("Incomplete weather data received");
+    }
+
+    return {
+        status: "success",
+        location: {
+            latitude,
+            longitude,
+            timezone: weatherData.timezone || "auto",
+        },
+        currentWeather: {
+            temperature: `${current.temperature_2m}°C`,
+            condition: current.weather_code,
+            humidity: `${current.relative_humidity_2m}%`,
+            windSpeed: `${current.wind_speed_10m} km/h`,
+            precipitation: `${current.precipitation}mm`,
+        },
+        sevenDayForecast: {
+            dates: daily.time?.slice(0, 7) || [],
+            maxTemps: daily.temperature_2m_max?.slice(0, 7) || [],
+            minTemps: daily.temperature_2m_min?.slice(0, 7) || [],
+            precipitation: daily.precipitation_sum?.slice(0, 7) || [],
+        },
+        alerts: buildWeatherAlerts(current, daily),
+        timestamp: new Date().toISOString(),
+        meta: {
+            source,
+            cropType,
+        },
+    };
+};
+
+const fetchBackendWeather = async (latitude, longitude, cropType = "") => {
+    const response = await fetch(getApiUrl("/weather/alert"), {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            latitude,
+            longitude,
+            cropType,
+        }),
+    });
+
+    if (!response.ok) {
+        let errorMessage = `Weather backend request failed with status ${response.status}`;
+
+        try {
+            const errorPayload = await response.json();
+            errorMessage = errorPayload?.message || errorPayload?.error || errorMessage;
+        } catch (error) {
+            console.warn("Unable to parse backend weather error payload:", error);
         }
 
-        const data = await response.json();
-        return data;
-    } catch (error) {
-        console.error("Weather API Error:", error);
-        throw error;
+        throw new Error(errorMessage);
+    }
+
+    return response.json();
+};
+
+const fetchOpenMeteoWeather = async (latitude, longitude, cropType = "") => {
+    const query = new URLSearchParams({
+        latitude: latitude.toString(),
+        longitude: longitude.toString(),
+        current: "temperature_2m,weather_code,wind_speed_10m,relative_humidity_2m,precipitation",
+        daily: "precipitation_sum,temperature_2m_max,temperature_2m_min,weather_code",
+        forecast_days: "7",
+        timezone: "auto",
+    });
+
+    const response = await fetch(`${OPEN_METEO_FORECAST_URL}?${query.toString()}`);
+    if (!response.ok) {
+        throw new Error(`Open-Meteo weather request failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    return buildWeatherPayload(data, latitude, longitude, cropType, "open-meteo");
+};
+
+export const getWeatherAlert = async (latitude, longitude, cropType = "") => {
+    const cacheKey = createWeatherCacheKey(latitude, longitude, cropType);
+    const cachedWeather = readCachedWeather(cacheKey);
+    if (cachedWeather?.data) {
+        return cachedWeather.data;
+    }
+
+    const staleCachedWeather = readCachedWeather(cacheKey, { allowStale: true });
+
+    try {
+        const backendData = await fetchBackendWeather(latitude, longitude, cropType);
+        writeCachedWeather(cacheKey, backendData);
+        return backendData;
+    } catch (backendError) {
+        console.warn("Weather backend unavailable, switching to direct Open-Meteo weather.", backendError);
+
+        try {
+            const fallbackData = await fetchOpenMeteoWeather(latitude, longitude, cropType);
+            writeCachedWeather(cacheKey, fallbackData);
+            return fallbackData;
+        } catch (fallbackError) {
+            if (staleCachedWeather?.data) {
+                console.warn("Serving stale cached weather data after backend and fallback failures.", fallbackError);
+                return {
+                    ...staleCachedWeather.data,
+                    meta: {
+                        ...(staleCachedWeather.data.meta || {}),
+                        servedFromCache: true,
+                        stale: true,
+                    },
+                };
+            }
+
+            console.error("Weather API Error:", fallbackError);
+            throw fallbackError;
+        }
     }
 };
 
