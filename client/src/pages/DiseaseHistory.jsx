@@ -61,18 +61,17 @@ const DiseaseHistory = () => {
     const mostFrequentCondition = getMostFrequentCondition(scanHistory);
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] px-6 pb-20 pt-28">
+        <div className="min-h-screen bg-[#F8FAFC] pt-28 pb-20 px-6 font-sans relative">
             <div className="mx-auto max-w-7xl">
-                <div className="mb-10 flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-                    <div className="max-w-3xl">
-                        <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-emerald-700">
-                            <Clock3 size={14} />
-                            Saved History
+                <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-6 mb-10">
+                    <div className="w-full xl:w-1/2 shrink-0">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-800 rounded-lg font-black text-xs uppercase tracking-widest mb-2 mt-2">
+                            <Clock3 size={12} /> Saved History
                         </div>
-                        <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-2">
                             Scan <span className="text-emerald-600">History</span>
                         </h1>
-                        <p className="mt-3 max-w-2xl text-sm font-medium leading-relaxed text-slate-500 md:text-base">
+                        <p className="text-slate-500 font-medium text-sm max-w-lg">
                             Review your earlier crop checks, compare results over time, and reopen treatment guidance whenever needed.
                         </p>
                     </div>
@@ -82,7 +81,7 @@ const DiseaseHistory = () => {
                         className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-3.5 text-sm font-black text-slate-700 transition hover:border-emerald-200 hover:text-emerald-700"
                     >
                         <ArrowLeft size={18} />
-                        Back to Disease Detection 
+                        Back to Disease Detection
                     </Link>
                 </div>
 
@@ -191,7 +190,7 @@ const DiseaseHistory = () => {
                                             <h2 className="mt-4 text-2xl font-black text-slate-900">
                                                 {scan.condition || scan.predictedLabel}
                                             </h2>
-                                            <p className="mt-2 text-sm text-slate-500 break-all">{scan.fileName || 'Uploaded crop image'}</p>
+                                            <p className="mt-2 break-all text-sm text-slate-500">{scan.fileName || 'Uploaded crop image'}</p>
 
                                             <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
                                                 <div className="rounded-2xl bg-slate-50 p-4">

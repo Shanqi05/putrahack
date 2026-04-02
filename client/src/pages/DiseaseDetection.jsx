@@ -178,18 +178,17 @@ const DiseaseDetection = () => {
     const treatmentGuide = prediction ? getTreatmentGuide(prediction) : null;
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] px-6 pb-20 pt-28">
+        <div className="min-h-screen bg-[#F8FAFC] pt-28 pb-20 px-6 font-sans relative">
             <div className="mx-auto max-w-7xl">
-                <div className="mb-10">
-                    <div className="max-w-3xl">
-                        <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-emerald-700">
-                            <Leaf size={14} />
-                            Crop Health Check
+                <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-6 mb-10">
+                    <div className="w-full xl:w-1/2 shrink-0">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-800 rounded-lg font-black text-xs uppercase tracking-widest mb-2 mt-2">
+                            <Leaf size={12} /> Crop Health Check
                         </div>
-                        <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-2">
                             Disease <span className="text-emerald-600">Detection</span>
                         </h1>
-                        <p className="mt-3 max-w-2xl text-sm font-medium leading-relaxed text-slate-500 md:text-base">
+                        <p className="text-slate-500 font-medium text-sm max-w-lg">
                             Upload a clear photo of the leaf or affected crop area to review the likely condition,
                             confidence score, and suggested follow-up actions.
                         </p>
@@ -197,50 +196,50 @@ const DiseaseDetection = () => {
                 </div>
 
                 <div className="rounded-[2.5rem] border border-slate-100 bg-white p-8 shadow-xl shadow-slate-200/50">
-                        <div className="flex flex-col gap-4 border-b border-slate-100 pb-6 md:flex-row md:items-start md:justify-between">
-                            <div className="max-w-2xl">
-                                <p className="text-sm font-black uppercase tracking-[0.18em] text-emerald-600">Scan a Crop Image</p>
-                                <h2 className="mt-2 text-3xl font-black text-slate-900">Upload and review one sample at a time</h2>
-                                <p className="mt-3 text-sm leading-relaxed text-slate-500">
-                                    A close, well-lit image usually gives the clearest result. This page stays focused on the current scan so it is easier to review.
-                                </p>
-                            </div>
-                            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-                                Supported: .jpg, .jpeg, .png, .webp, .bmp file
-                            </div>
+                    <div className="flex flex-col gap-4 border-b border-slate-100 pb-6 md:flex-row md:items-start md:justify-between">
+                        <div className="max-w-2xl">
+                            <p className="text-sm font-black uppercase tracking-[0.18em] text-emerald-600">Scan a Crop Image</p>
+                            <h2 className="mt-2 text-3xl font-black text-slate-900">Upload and review one sample at a time</h2>
+                            <p className="mt-3 text-sm leading-relaxed text-slate-500">
+                                A close, well-lit image usually gives the clearest result. This page stays focused on the current scan so it is easier to review.
+                            </p>
                         </div>
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                            Supported: .jpg, .jpeg, .png, .webp, .bmp file
+                        </div>
+                    </div>
 
-                        <div className="mt-8">
-                            <p className="text-sm font-black uppercase tracking-[0.18em] text-emerald-600">Before You Upload</p>
-                            <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
-                                {[
-                                    {
-                                        title: 'Use one subject',
-                                        description: 'Capture one leaf or the affected crop area so the scan is easier to interpret.',
-                                    },
-                                    {
-                                        title: 'Prefer natural lighting',
-                                        description: 'Good lighting helps spots, discoloration, and texture changes show clearly.',
-                                    },
-                                    {
-                                        title: 'Avoid wide shots',
-                                        description: 'Stay close enough for the disease pattern to be visible without heavy background clutter.',
-                                    },
-                                ].map((tip, index) => (
-                                    <div key={tip.title} className="rounded-2xl bg-slate-50 p-4">
-                                        <div className="flex items-start gap-4">
-                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-sm font-black text-emerald-600 shadow-sm">
-                                                {`0${index + 1}`}
-                                            </div>
-                                            <div>
-                                                <h3 className="text-sm font-black text-slate-900">{tip.title}</h3>
-                                                <p className="mt-1 text-sm leading-relaxed text-slate-500">{tip.description}</p>
-                                            </div>
+                    <div className="mt-8">
+                        <p className="text-sm font-black uppercase tracking-[0.18em] text-emerald-600">Before You Upload</p>
+                        <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+                            {[
+                                {
+                                    title: 'Use one subject',
+                                    description: 'Capture one leaf or the affected crop area so the scan is easier to interpret.',
+                                },
+                                {
+                                    title: 'Prefer natural lighting',
+                                    description: 'Good lighting helps spots, discoloration, and texture changes show clearly.',
+                                },
+                                {
+                                    title: 'Avoid wide shots',
+                                    description: 'Stay close enough for the disease pattern to be visible without heavy background clutter.',
+                                },
+                            ].map((tip, index) => (
+                                <div key={tip.title} className="rounded-2xl bg-slate-50 p-4">
+                                    <div className="flex items-start gap-4">
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-sm font-black text-emerald-600 shadow-sm">
+                                            {`0${index + 1}`}
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-black text-slate-900">{tip.title}</h3>
+                                            <p className="mt-1 text-sm leading-relaxed text-slate-500">{tip.description}</p>
                                         </div>
                                     </div>
-                                ))}
-                            </div>
+                                </div>
+                            ))}
                         </div>
+                    </div>
 
                         <div
                             className={`mt-8 rounded-[2rem] border-2 border-dashed p-8 transition-all ${
